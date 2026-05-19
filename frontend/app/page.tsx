@@ -133,7 +133,7 @@ export default function Module2Dashboard() {
 
         <div className="sidebar-footer">
           <p>API Module 2</p>
-          <strong>{process.env.NEXT_PUBLIC_MODULE2_BACKEND_URL || "localhost:5001"}</strong>
+          <strong>{process.env.NEXT_PUBLIC_MODULE2_BACKEND_URL || "http://localhost:5000"}</strong>
         </div>
       </aside>
 

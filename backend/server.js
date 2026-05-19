@@ -207,34 +207,79 @@ app.post(
       return res.status(404).json({ error: "payment provider not found" });
     }
 
-    const result = await pool.query(
-      `INSERT INTO module2.user_payment_methods (
-         user_id, provider_id, provider_customer_ref, provider_payment_method_ref,
-         method_type, brand, last4, expiry_month, expiry_year, holder_name,
-         country_code, is_default, metadata
-       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-       RETURNING id, user_id, provider_id, method_type, brand, last4,
-                 expiry_month, expiry_year, holder_name, country_code,
-                 is_default, status, created_at, updated_at`,
-      [
-        userId,
-        provider.id,
-        providerCustomerRef || null,
-        providerPaymentMethodRef || null,
-        methodType,
-        brand || null,
-        last4 || null,
-        expiryMonth || null,
-        expiryYear || null,
-        holderName || null,
-        countryCode || null,
-        Boolean(isDefault),
-        { source: "api" },
-      ]
-    );
+    const client = await pool.connect();
 
-    res.status(201).json(result.rows[0]);
+    try {
+      await client.query("BEGIN");
+
+      if (Boolean(isDefault)) {
+        await client.query(
+          `UPDATE module2.user_payment_methods
+           SET is_default = FALSE
+           WHERE user_id = $1 AND is_default = TRUE AND status = 'ACTIVE'`,
+          [userId]
+        );
+      }
+
+      const result = await client.query(
+        `INSERT INTO module2.user_payment_methods (
+           user_id, provider_id, provider_customer_ref, provider_payment_method_ref,
+           method_type, brand, last4, expiry_month, expiry_year, holder_name,
+           country_code, is_default, metadata
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         RETURNING id, user_id, provider_id, method_type, brand, last4,
+                   expiry_month, expiry_year, holder_name, country_code,
+                   is_default, status, created_at, updated_at`,
+        [
+          userId,
+          provider.id,
+          providerCustomerRef || null,
+          providerPaymentMethodRef || null,
+          methodType,
+          brand || null,
+          last4 || null,
+          expiryMonth || null,
+          expiryYear || null,
+          holderName || null,
+          countryCode || null,
+          Boolean(isDefault),
+          { source: "api" },
+        ]
+      );
+
+      const paymentMethod = await client.query(
+        `SELECT
+           upm.id,
+           upm.user_id,
+           upm.provider_id,
+           pp.code AS provider_code,
+           pp.display_name AS provider_name,
+           upm.method_type,
+           upm.brand,
+           upm.last4,
+           upm.expiry_month,
+           upm.expiry_year,
+           upm.holder_name,
+           upm.country_code,
+           upm.is_default,
+           upm.status,
+           upm.created_at,
+           upm.updated_at
+         FROM module2.user_payment_methods upm
+         JOIN module2.payment_providers pp ON pp.id = upm.provider_id
+         WHERE upm.id = $1`,
+        [result.rows[0].id]
+      );
+
+      await client.query("COMMIT");
+      res.status(201).json(paymentMethod.rows[0]);
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   })
 );
 
@@ -759,13 +804,8 @@ app.post(
 app.get(
   "/api/module2/users/:userId/wallet",
   asyncHandler(async (req, res) => {
-    const wallet = await findWalletByUserId(req.params.userId);
-
-    if (!wallet) {
-      return res.status(404).json({
-        error: "wallet not found",
-      });
-    }
+    const userId = parseIntegerParam(req.params.userId, "userId");
+    const wallet = await findOrCreateWallet(pool, userId);
 
     res.json(wallet);
   })

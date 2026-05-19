@@ -175,7 +175,7 @@ export type Module2Snapshot = {
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_MODULE2_BACKEND_URL ||
-  "http://localhost:5001";
+  "http://localhost:5000";
 
 export async function loadModule2Snapshot(userId?: number): Promise<Module2Snapshot> {
   const users = await request<ApiUser[]>("/api/users");
