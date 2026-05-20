@@ -1054,9 +1054,497 @@ app.post(
   })
 );
 
+// Module 4: messagerie, conversations, participants, messages et appels.
+app.get(
+  "/api/module4/users/:userId/conversations",
+  asyncHandler(async (req, res) => {
+    const userId = parseIntegerParam(req.params.userId, "userId");
+
+    const result = await pool.query(
+      `SELECT
+         c.id,
+         c.type,
+         c.name,
+         c.avatar_url,
+         c.pinned_message_id,
+         c.created_at,
+         c.updated_at,
+         p.role,
+         p.last_read_at,
+         m.id AS last_message_id,
+         m.sender_id AS last_message_sender_id,
+         u.username AS last_message_sender_username,
+         m.text_content AS last_message_text,
+         m.content_type AS last_message_type,
+         m.created_at AS last_message_created_at,
+         COALESCE(
+           (SELECT COUNT(1)
+            FROM module4.messages
+            WHERE conversation_id = c.id
+              AND created_at > p.last_read_at),
+           0
+         ) AS unread_count
+       FROM module4.conversations c
+       JOIN module4.participants p ON p.conversation_id = c.id
+       LEFT JOIN LATERAL (
+         SELECT id, sender_id, text_content, content_type, created_at
+         FROM module4.messages
+         WHERE conversation_id = c.id
+         ORDER BY created_at DESC
+         LIMIT 1
+       ) m ON TRUE
+       LEFT JOIN public.users u ON u.id = m.sender_id
+       WHERE p.user_id = $1
+       ORDER BY c.updated_at DESC`,
+      [userId]
+    );
+
+    res.json(result.rows);
+  })
+);
+
+app.get(
+  "/api/module4/conversations/:conversationId",
+  asyncHandler(async (req, res) => {
+    const conversationId = req.params.conversationId;
+
+    const conversationResult = await pool.query(
+      `SELECT id, type, name, avatar_url, pinned_message_id, created_at, updated_at
+       FROM module4.conversations
+       WHERE id = $1`,
+      [conversationId]
+    );
+
+    const conversation = conversationResult.rows[0];
+
+    if (!conversation) {
+      return res.status(404).json({ error: "conversation not found" });
+    }
+
+    const participantsResult = await pool.query(
+      `SELECT p.user_id, p.role, p.joined_at, p.last_read_at,
+              u.username, u.email
+       FROM module4.participants p
+       JOIN public.users u ON u.id = p.user_id
+       WHERE p.conversation_id = $1
+       ORDER BY p.joined_at ASC`,
+      [conversationId]
+    );
+
+    const pinnedMessage = conversation.pinned_message_id
+      ? (
+          await pool.query(
+            `SELECT m.id, m.conversation_id, m.sender_id, u.username AS sender_username,
+                    m.content_type, m.text_content, m.attachment_meta, m.parent_id,
+                    m.created_at
+             FROM module4.messages m
+             LEFT JOIN public.users u ON u.id = m.sender_id
+             WHERE m.id = $1`,
+            [conversation.pinned_message_id]
+          )
+        ).rows[0]
+      : null;
+
+    res.json({
+      ...conversation,
+      participants: participantsResult.rows,
+      pinned_message: pinnedMessage,
+    });
+  })
+);
+
+app.post(
+  "/api/module4/conversations",
+  asyncHandler(async (req, res) => {
+    const { type, name, participantIds, createdByUserId, avatarUrl } = req.body;
+
+    requireFields({ type, participantIds, createdByUserId });
+
+    if (!Array.isArray(participantIds) || participantIds.length < 2) {
+      return res.status(400).json({
+        error: "participantIds must be an array with at least two users",
+      });
+    }
+
+    if (type === "group" && (!name || !name.trim())) {
+      return res.status(400).json({
+        error: "group conversations require a name",
+      });
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      const conversationResult = await client.query(
+        `INSERT INTO module4.conversations (type, name, avatar_url)
+         VALUES ($1, $2, $3)
+         RETURNING id, type, name, avatar_url, pinned_message_id, created_at, updated_at`,
+        [type, name || null, avatarUrl || null]
+      );
+
+      const conversation = conversationResult.rows[0];
+      const participantRows = [];
+
+      for (const participantId of participantIds) {
+        const role = participantId === createdByUserId ? "admin" : "member";
+        const participantResult = await client.query(
+          `INSERT INTO module4.participants (conversation_id, user_id, role)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (conversation_id, user_id) DO NOTHING
+           RETURNING conversation_id, user_id, role, joined_at, last_read_at`,
+          [conversation.id, participantId, role]
+        );
+
+        participantRows.push(
+          participantResult.rows[0] || {
+            conversation_id: conversation.id,
+            user_id: participantId,
+            role,
+          }
+        );
+      }
+
+      await client.query("COMMIT");
+
+      const payload = {
+        ...conversation,
+        participants: participantRows,
+      };
+
+      for (const participantId of participantIds) {
+        io.to(`user:${participantId}`).emit(
+          "module4:conversation:created",
+          payload
+        );
+      }
+
+      res.status(201).json(payload);
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  })
+);
+
+app.patch(
+  "/api/module4/conversations/:conversationId",
+  asyncHandler(async (req, res) => {
+    const conversationId = req.params.conversationId;
+    const { name, avatarUrl, pinnedMessageId } = req.body;
+
+    if (name === undefined && avatarUrl === undefined && pinnedMessageId === undefined) {
+      return res.status(400).json({
+        error: "At least one field to update is required",
+      });
+    }
+
+    const values = [conversationId];
+    const updates = [];
+
+    if (name !== undefined) {
+      updates.push(`name = $${values.length + 1}`);
+      values.push(name || null);
+    }
+
+    if (avatarUrl !== undefined) {
+      updates.push(`avatar_url = $${values.length + 1}`);
+      values.push(avatarUrl || null);
+    }
+
+    if (pinnedMessageId !== undefined) {
+      updates.push(`pinned_message_id = $${values.length + 1}`);
+      values.push(pinnedMessageId || null);
+    }
+
+    const result = await pool.query(
+      `UPDATE module4.conversations
+       SET ${updates.join(", ")}
+       WHERE id = $1
+       RETURNING id, type, name, avatar_url, pinned_message_id, created_at, updated_at`,
+      values
+    );
+
+    if (!result.rows[0]) {
+      return res.status(404).json({ error: "conversation not found" });
+    }
+
+    io.to(`conversation:${conversationId}`).emit(
+      "module4:conversation:updated",
+      result.rows[0]
+    );
+
+    res.json(result.rows[0]);
+  })
+);
+
+app.get(
+  "/api/module4/conversations/:conversationId/participants",
+  asyncHandler(async (req, res) => {
+    const conversationId = req.params.conversationId;
+
+    const result = await pool.query(
+      `SELECT p.user_id, p.role, p.joined_at, p.last_read_at,
+              u.username, u.email
+       FROM module4.participants p
+       JOIN public.users u ON u.id = p.user_id
+       WHERE p.conversation_id = $1
+       ORDER BY p.joined_at ASC`,
+      [conversationId]
+    );
+
+    res.json(result.rows);
+  })
+);
+
+app.post(
+  "/api/module4/conversations/:conversationId/participants",
+  asyncHandler(async (req, res) => {
+    const conversationId = req.params.conversationId;
+    const { userId, role } = req.body;
+
+    requireFields({ userId });
+
+    if (role && !["member", "moderator", "admin"].includes(role)) {
+      return res.status(400).json({
+        error: "Invalid participant role",
+      });
+    }
+
+    const conversationExists = await pool.query(
+      `SELECT id FROM module4.conversations WHERE id = $1`,
+      [conversationId]
+    );
+
+    if (!conversationExists.rows[0]) {
+      return res.status(404).json({ error: "conversation not found" });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO module4.participants (conversation_id, user_id, role)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (conversation_id, user_id) DO UPDATE
+       SET role = EXCLUDED.role
+       RETURNING conversation_id, user_id, role, joined_at, last_read_at`,
+      [conversationId, userId, role || "member"]
+    );
+
+    io.to(`conversation:${conversationId}`).emit(
+      "module4:participant:added",
+      result.rows[0]
+    );
+
+    res.status(201).json(result.rows[0]);
+  })
+);
+
+app.get(
+  "/api/module4/conversations/:conversationId/messages",
+  asyncHandler(async (req, res) => {
+    const conversationId = req.params.conversationId;
+
+    const result = await pool.query(
+      `SELECT m.id, m.conversation_id, m.sender_id, u.username AS sender_username,
+              m.content_type, m.text_content, m.attachment_meta, m.parent_id,
+              m.created_at
+       FROM module4.messages m
+       LEFT JOIN public.users u ON u.id = m.sender_id
+       WHERE m.conversation_id = $1
+       ORDER BY m.created_at ASC
+       LIMIT 500`,
+      [conversationId]
+    );
+
+    res.json(result.rows);
+  })
+);
+
+app.post(
+  "/api/module4/conversations/:conversationId/messages",
+  asyncHandler(async (req, res) => {
+    const conversationId = req.params.conversationId;
+    const {
+      senderId,
+      contentType = "text",
+      textContent,
+      attachmentMeta,
+      parentId,
+    } = req.body;
+
+    requireFields({ senderId, contentType });
+
+    if (contentType === "text" && !textContent) {
+      return res.status(400).json({
+        error: "textContent is required for text messages",
+      });
+    }
+
+    if (contentType !== "text" && !attachmentMeta) {
+      return res.status(400).json({
+        error: "attachmentMeta is required for non-text messages",
+      });
+    }
+
+    const participantResult = await pool.query(
+      `SELECT 1
+       FROM module4.participants
+       WHERE conversation_id = $1 AND user_id = $2`,
+      [conversationId, senderId]
+    );
+
+    if (!participantResult.rows[0]) {
+      return res.status(403).json({
+        error: "sender is not a participant of this conversation",
+      });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO module4.messages (
+         conversation_id, sender_id, content_type, text_content,
+         attachment_meta, parent_id
+       )
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, conversation_id, sender_id, content_type,
+                 text_content, attachment_meta, parent_id, created_at`,
+      [
+        conversationId,
+        senderId,
+        contentType,
+        textContent || null,
+        attachmentMeta || null,
+        parentId || null,
+      ]
+    );
+
+    const message = result.rows[0];
+
+    const senderResult = await pool.query(
+      `SELECT id, username, email FROM public.users WHERE id = $1`,
+      [senderId]
+    );
+
+    const payload = {
+      ...message,
+      sender: senderResult.rows[0] || null,
+    };
+
+    io.to(`conversation:${conversationId}`).emit(
+      "module4:message:created",
+      payload
+    );
+
+    res.status(201).json(payload);
+  })
+);
+
+app.post(
+  "/api/module4/conversations/:conversationId/calls",
+  asyncHandler(async (req, res) => {
+    const conversationId = req.params.conversationId;
+    const { creatorId, type, roomName, status = "ongoing", endedAt } = req.body;
+
+    requireFields({ creatorId, type, roomName });
+
+    if (!["audio_call", "video_call"].includes(type)) {
+      return res.status(400).json({
+        error: "type must be audio_call or video_call",
+      });
+    }
+
+    if (!["missed", "completed", "rejected", "ongoing"].includes(status)) {
+      return res.status(400).json({
+        error: "Invalid call status",
+      });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO module4.call_logs (
+         conversation_id, creator_id, type, status, room_name, ended_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, conversation_id, creator_id, type, status, started_at,
+                 ended_at`,
+      [conversationId, creatorId, type, status, roomName, endedAt || null]
+    );
+
+    const call = result.rows[0];
+
+    io.to(`conversation:${conversationId}`).emit("module4:call:created", call);
+
+    res.status(201).json(call);
+  })
+);
+
+app.patch(
+  "/api/module4/calls/:callId/status",
+  asyncHandler(async (req, res) => {
+    const { status, endedAt } = req.body;
+
+    requireFields({ status });
+
+    if (!["missed", "completed", "rejected", "ongoing"].includes(status)) {
+      return res.status(400).json({
+        error: "Invalid call status",
+      });
+    }
+
+    const values = [status, req.params.callId];
+    let endedAtUpdate = "";
+
+    if (endedAt !== undefined) {
+      endedAtUpdate = ", ended_at = $2";
+      values.splice(1, 0, endedAt);
+    }
+
+    const result = await pool.query(
+      `UPDATE module4.call_logs
+       SET status = $1${endedAtUpdate}
+       WHERE id = $${values.length}
+       RETURNING id, conversation_id, creator_id, type, status, started_at, ended_at`,
+      values
+    );
+
+    if (!result.rows[0]) {
+      return res.status(404).json({ error: "call log not found" });
+    }
+
+    const call = result.rows[0];
+    io.to(`conversation:${call.conversation_id}`).emit("module4:call:updated", call);
+
+    res.json(call);
+  })
+);
+
 io.on("connection", (socket) => {
   socket.emit("connected", {
     message: "Connected to Communium realtime API",
+  });
+
+  socket.on("join:user", ({ userId }) => {
+    if (userId) {
+      socket.join(`user:${userId}`);
+    }
+  });
+
+  socket.on("leave:user", ({ userId }) => {
+    if (userId) {
+      socket.leave(`user:${userId}`);
+    }
+  });
+
+  socket.on("join:conversation", ({ conversationId }) => {
+    if (conversationId) {
+      socket.join(`conversation:${conversationId}`);
+    }
+  });
+
+  socket.on("leave:conversation", ({ conversationId }) => {
+    if (conversationId) {
+      socket.leave(`conversation:${conversationId}`);
+    }
   });
 });
 

@@ -7,6 +7,7 @@ Ce dossier contient les scripts PostgreSQL du projet The Communium.
 - `init.sql` : base minimale actuelle du projet.
 - `m2_payments_tks.sql` : schema professionnel du Module 2, dedie aux paiements, au wallet Tks, aux transactions et aux factures.
 - `seed_m2_payments_tks.sql` : donnees de demonstration du Module 2.
+- `m4_messaging.sql` : schema professionnel du Module 4, dedie aux conversations, messages, groupes, threads et appels.
 
 ## Module 2 - Paiements et economie Tks
 
@@ -35,6 +36,20 @@ Pour eviter de casser l'initialisation, le Module 2 garde des references stables
 - `payment_intents.membership_subscription_ref` pour relier un paiement a une adhesion M1-05.
 - `payment_intents.business_profile_ref` pour relier un paiement a un profil business M1-04.
 - `wallets.user_id` et `payment_intents.user_id` pointent deja vers `public.users(id)`.
+
+## Module 4 - Messagerie et communication temps réel
+
+Le Module 4 est isolé dans le schema PostgreSQL `module4`.
+Cette base gère :
+
+- Conversations directes et groupes via `module4.conversations`.
+- Participants et rôles (`member`, `moderator`, `admin`) via `module4.participants`.
+- Messages textuels, images, fichiers et threads via `module4.messages`.
+- Appels audio/vidéo et historique via `module4.call_logs`.
+- Tri des conversations par dernier message grâce à `updated_at` et trigger de conversation.
+- Recherche full-text en français sur les messages.
+
+## Liens avec le Module 1
 
 Quand les tables SQL finales du Module 1 seront stabilisees, on pourra ajouter des foreign keys explicites vers les tables d'adhesion et de profil business.
 
