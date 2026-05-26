@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Video, VideoOff, Monitor, Phone, X } from "lucide-react";
+import { Mic, MicOff, Monitor, Phone, Video, VideoOff } from "lucide-react";
 
 interface CallProps {
   conversationId: string;
@@ -10,8 +10,9 @@ interface CallProps {
   onEndCall: () => void;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 export default function CallInterface({
-  conversationId,
   callId,
   remoteUserName,
   onEndCall,
@@ -21,67 +22,54 @@ export default function CallInterface({
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLDivElement>(null);
-  const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
-    // Démarrer le timer
-    durationIntervalRef.current = setInterval(() => {
-      setDuration((prev) => prev + 1);
-    }, 1000);
-
-    return () => {
-      if (durationIntervalRef.current) {
-        clearInterval(durationIntervalRef.current);
-      }
-    };
+    const interval = setInterval(() => setDuration((value) => value + 1), 1000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    // Initialiser les flux vidéo
-    const initializeMedia = async () => {
+    let cancelled = false;
+
+    async function initializeMedia() {
+      if (isVideoOff) {
+        stopStream();
+        return;
+      }
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: !isVideoOff,
+          video: true,
           audio: !isMuted,
         });
 
-        if (localVideoRef.current && !isVideoOff) {
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+        if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
       } catch (error) {
-        console.error("Erreur d'accès à la caméra/micro:", error);
+        console.error("Impossible d’accéder à la caméra ou au micro", error);
       }
-    };
+    }
 
     initializeMedia();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isMuted, isVideoOff]);
 
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+  async function handleEndCall() {
+    stopStream();
 
-    if (hours > 0) {
-      return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-        2,
-        "0"
-      )}:${String(secs).padStart(2, "0")}`;
-    }
-
-    return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  };
-
-  const handleEndCall = async () => {
-    // Arrêter les flux
-    if (localVideoRef.current && localVideoRef.current.srcObject) {
-      const stream = localVideoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
-    }
-
-    // Notifier le backend
     try {
-      await fetch(`http://localhost:5000/api/module4/calls/${callId}/status`, {
+      await fetch(`${API_URL}/api/module4/calls/${callId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -89,106 +77,126 @@ export default function CallInterface({
           endedAt: new Date().toISOString(),
         }),
       });
-    } catch (error) {
-      console.error("Erreur lors de la fin de l'appel:", error);
+    } catch {
+      // L’appel peut être terminé côté UI même si l’API locale est indisponible.
     }
 
     onEndCall();
-  };
+  }
+
+  function stopStream() {
+    if (!streamRef.current) return;
+    streamRef.current.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  }
 
   return (
-    <div className="flex flex-col h-screen bg-black text-white relative">
-      {/* Remote Video Stream (Full Screen) */}
-      <div ref={remoteVideoRef} className="flex-1 bg-gray-900 relative flex items-center justify-center">
-        {/* Placeholder pour le flux vidéo du correspondant */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4"></div>
-          <h2 className="text-2xl font-semibold">{remoteUserName}</h2>
-          <p className="text-gray-400">📞 Appel Vidéo En Cours</p>
-        </div>
-
-        {/* Local Video (Picture-in-Picture) */}
-        <div className="absolute bottom-20 right-4 w-32 h-40 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-600">
-          <video
-            ref={localVideoRef}
-            autoPlay
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-          />
-          <p className="absolute bottom-1 left-1 text-xs text-white bg-black bg-opacity-50 px-2 py-1 rounded">
-            Ta caméra
+    <div className="flex h-screen flex-col bg-white text-slate-950">
+      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div>
+          <p className="text-xs font-bold uppercase text-blue-600">
+            Appel vidéo en cours
           </p>
+          <h1 className="text-lg font-black">{remoteUserName}</h1>
         </div>
-
-        {/* Duration */}
-        <div className="absolute top-8 left-1/2 transform -translate-x-1/2 text-xl font-semibold">
-          Durée : {formatDuration(duration)}
-        </div>
-
-        {/* Title */}
-        <div className="absolute top-4 right-4 text-sm text-gray-400">
-          📹 Appel Vidéo En Cours
-        </div>
+        <p className="rounded-full bg-blue-50 px-3 py-1 text-sm font-bold text-blue-700">
+          {formatDuration(duration)}
+        </p>
       </div>
 
-      {/* Controls */}
-      <div className="bg-gray-950 border-t border-gray-700 p-6 flex justify-center items-center gap-6">
-        {/* Mute Button */}
-        <button
-          onClick={() => setIsMuted(!isMuted)}
-          className={`p-4 rounded-full transition ${
-            isMuted
-              ? "bg-red-600 hover:bg-red-700 text-white"
-              : "bg-gray-800 hover:bg-gray-700 text-white"
-          }`}
-          title={isMuted ? "Activer le micro" : "Désactiver le micro"}
-        >
-          {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
-        </button>
+      <div className="relative flex-1 bg-slate-100">
+        <div className="absolute inset-0 grid place-items-center">
+          <div className="text-center">
+            <div className="mx-auto mb-4 grid h-28 w-28 place-items-center rounded-full bg-blue-600 text-3xl font-black text-white">
+              {remoteUserName
+                .split(" ")
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part[0]?.toUpperCase())
+                .join("")}
+            </div>
+            <h2 className="text-2xl font-black">{remoteUserName}</h2>
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              Connexion sécurisée Communium
+            </p>
+          </div>
+        </div>
 
-        {/* Video Toggle */}
-        <button
-          onClick={() => setIsVideoOff(!isVideoOff)}
-          className={`p-4 rounded-full transition ${
-            isVideoOff
-              ? "bg-red-600 hover:bg-red-700 text-white"
-              : "bg-gray-800 hover:bg-gray-700 text-white"
-          }`}
-          title={isVideoOff ? "Activer la caméra" : "Désactiver la caméra"}
-        >
-          {isVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
-        </button>
-
-        {/* Screen Share */}
-        <button
-          onClick={() => setIsScreenSharing(!isScreenSharing)}
-          className={`p-4 rounded-full transition ${
-            isScreenSharing
-              ? "bg-blue-600 hover:bg-blue-700 text-white"
-              : "bg-gray-800 hover:bg-gray-700 text-white"
-          }`}
-          title={isScreenSharing ? "Arrêter le partage" : "Partager l'écran"}
-        >
-          <Monitor size={24} />
-        </button>
-
-        {/* End Call (Red) */}
-        <button
-          onClick={handleEndCall}
-          className="p-4 rounded-full bg-red-600 hover:bg-red-700 text-white transition"
-          title="Quitter l'appel"
-        >
-          <Phone size={24} className="transform rotate-135" />
-        </button>
+        {!isVideoOff && (
+          <div className="absolute bottom-5 right-5 h-44 w-32 overflow-hidden rounded-[8px] border border-white bg-slate-900 shadow-xl">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              muted
+              playsInline
+              className="h-full w-full object-cover"
+            />
+            <span className="absolute bottom-2 left-2 rounded bg-slate-950/70 px-2 py-1 text-xs font-bold text-white">
+              Ma caméra
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Control Labels */}
-      <div className="bg-gray-950 px-6 pb-4 flex justify-center gap-8 text-xs text-gray-400">
-        <span>{isMuted ? "🔇 Muté" : "🎤 Micro activé"}</span>
-        <span>{isVideoOff ? "📴 Caméra Off" : "📹 Caméra On"}</span>
-        <span>{isScreenSharing ? "📲 Partage actif" : "📲 Partage"}</span>
+      <div className="border-t border-slate-200 bg-white p-5">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => setIsMuted((value) => !value)}
+            className={`grid h-12 w-12 place-items-center rounded-[8px] ${
+              isMuted ? "bg-red-600 text-white" : "bg-slate-100 text-slate-700"
+            }`}
+            title={isMuted ? "Activer le micro" : "Désactiver le micro"}
+          >
+            {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
+          </button>
+
+          <button
+            onClick={() => setIsVideoOff((value) => !value)}
+            className={`grid h-12 w-12 place-items-center rounded-[8px] ${
+              isVideoOff ? "bg-red-600 text-white" : "bg-slate-100 text-slate-700"
+            }`}
+            title={isVideoOff ? "Activer la caméra" : "Désactiver la caméra"}
+          >
+            {isVideoOff ? <VideoOff size={22} /> : <Video size={22} />}
+          </button>
+
+          <button
+            onClick={() => setIsScreenSharing((value) => !value)}
+            className={`grid h-12 w-12 place-items-center rounded-[8px] ${
+              isScreenSharing
+                ? "bg-blue-600 text-white"
+                : "bg-slate-100 text-slate-700"
+            }`}
+            title="Partager l’écran"
+          >
+            <Monitor size={22} />
+          </button>
+
+          <button
+            onClick={handleEndCall}
+            className="inline-flex h-12 items-center gap-2 rounded-[8px] bg-red-600 px-5 font-black text-white hover:bg-red-700"
+            title="Quitter l’appel"
+          >
+            <Phone size={21} />
+            Quitter l’appel
+          </button>
+        </div>
       </div>
     </div>
   );
+}
+
+function formatDuration(totalSeconds: number) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+      2,
+      "0"
+    )}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }

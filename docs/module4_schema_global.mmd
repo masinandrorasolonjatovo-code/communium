@@ -1,0 +1,21 @@
+flowchart TD
+  U[Utilisateur PC ou mobile] --> F[Frontend Next.js - Module 4]
+  F --> UI[Interface messagerie: liste, conversation, groupes, appels]
+  UI --> BROWSER[APIs navigateur: fichiers, images, camera, micro, notifications]
+  F --> REST[API REST Express]
+  F --> WS[Socket.IO temps reel]
+  REST --> DB[(PostgreSQL - schema module4)]
+  WS --> ROOM[Salons: user et conversation]
+  ROOM --> RT[Messages, typing, lecture, notifications, appels]
+  DB --> DATA[Conversations, participants, messages, call logs]
+  REST --> DATA
+  BROWSER --> ATTACH[Pieces jointes et medias locaux]
+  ATTACH -. stockage serveur futur .-> STORE[(Stockage fichiers: S3, Supabase ou Azure Blob)]
+  STORE -. URL durable .-> REST
+
+  classDef primary fill:#2563eb,color:#ffffff,stroke:#1d4ed8;
+  classDef soft fill:#eff6ff,color:#172554,stroke:#bfdbfe;
+  classDef data fill:#f8fafc,color:#0f172a,stroke:#cbd5e1;
+  class F,REST,WS primary;
+  class U,UI,BROWSER,ROOM,RT,ATTACH soft;
+  class DB,DATA,STORE data;

@@ -1435,6 +1435,12 @@ app.post(
       "module4:message:created",
       payload
     );
+    io.to(`conversation:${conversationId}`).emit("module4:notification", {
+      conversationId,
+      title: senderResult.rows[0]?.username || "Nouveau message",
+      body: message.text_content || "Pièce jointe reçue",
+      createdAt: new Date().toISOString(),
+    });
 
     res.status(201).json(payload);
   })
@@ -1544,6 +1550,47 @@ io.on("connection", (socket) => {
   socket.on("leave:conversation", ({ conversationId }) => {
     if (conversationId) {
       socket.leave(`conversation:${conversationId}`);
+    }
+  });
+
+  socket.on("module4:typing:start", ({ conversationId, userId, username }) => {
+    if (conversationId && userId) {
+      socket.to(`conversation:${conversationId}`).emit("module4:typing:start", {
+        conversationId,
+        userId,
+        username,
+      });
+    }
+  });
+
+  socket.on("module4:typing:stop", ({ conversationId, userId }) => {
+    if (conversationId && userId) {
+      socket.to(`conversation:${conversationId}`).emit("module4:typing:stop", {
+        conversationId,
+        userId,
+      });
+    }
+  });
+
+  socket.on("module4:message:read", ({ conversationId, userId, messageId }) => {
+    if (conversationId && userId) {
+      socket.to(`conversation:${conversationId}`).emit("module4:message:read", {
+        conversationId,
+        userId,
+        messageId,
+        readAt: new Date().toISOString(),
+      });
+    }
+  });
+
+  socket.on("module4:notification", ({ conversationId, title, body }) => {
+    if (conversationId) {
+      socket.to(`conversation:${conversationId}`).emit("module4:notification", {
+        conversationId,
+        title,
+        body,
+        createdAt: new Date().toISOString(),
+      });
     }
   });
 });
