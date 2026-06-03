@@ -6,11 +6,21 @@ const cors = require("cors");
 const express = require("express");
 const { Pool } = require("pg");
 const { Server } = require("socket.io");
+const QRCode = require("qrcode");
+const PDFDocument = require("pdfkit");
+const nodemailer = require("nodemailer");
 
 loadEnvFile(path.join(__dirname, ".env"));
 
 const PORT = Number(process.env.PORT || 5000);
-const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:3000";
+const CORS_ORIGINS = (process.env.CORS_ORIGIN || "http://localhost:3000").split(",").map((origin) => origin.trim()).filter(Boolean);
+const isAllowedCorsOrigin = (origin) => {
+  if (!origin || CORS_ORIGINS.includes(origin)) {
+    return true;
+  }
+
+  return /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+};
 const DATABASE_URL =
   process.env.DATABASE_URL ||
   "postgresql://communium:communium_dev_password@localhost:5433/communium";
@@ -19,7 +29,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: CORS_ORIGIN,
+    origin: (origin, callback) => {
+      if (isAllowedCorsOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS origin denied: ${origin}`));
+      }
+    },
   },
 });
 
@@ -29,7 +45,13 @@ const pool = new Pool({
 
 app.use(
   cors({
-    origin: CORS_ORIGIN,
+    origin: (origin, callback) => {
+      if (isAllowedCorsOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS origin denied: ${origin}`));
+      }
+    },
   })
 );
 app.use(express.json({ limit: "1mb" }));
@@ -137,14 +159,22 @@ app.post(
 app.get(
   "/api/module2/providers",
   asyncHandler(async (req, res) => {
-    const result = await pool.query(
-      `SELECT id, code, display_name, provider_type, supported_currency_codes,
-              supports_cards, supports_subscriptions, supports_refunds, is_active
-       FROM module2.payment_providers
-       ORDER BY display_name ASC`
-    );
+    try {
+      const result = await pool.query(
+        `SELECT id, code, display_name, provider_type, supported_currency_codes,
+                supports_cards, supports_subscriptions, supports_refunds, is_active
+         FROM module2.payment_providers
+         ORDER BY display_name ASC`
+      );
 
-    res.json(result.rows);
+      res.json(result.rows);
+    } catch (error) {
+      if (error?.code === "42P01") {
+        // Missing payment provider table: return empty list until the module2 schema is initialized.
+        return res.json([]);
+      }
+      throw error;
+    }
   })
 );
 
@@ -428,45 +458,50 @@ app.patch(
       return res.status(404).json({ error: "payment intent not found" });
     }
 
-    io.emit("payment-intent:updated", result.rows[0]);
-    res.json(result.rows[0]);
-  })
-);
+        const paymentIntent = result.rows[0];
 
-app.get(
-  "/api/module2/users/:userId/subscriptions",
-  asyncHandler(async (req, res) => {
-    const userId = parseIntegerParam(req.params.userId, "userId");
-    const result = await pool.query(
-      `SELECT
-         ps.id,
-         ps.user_id,
-         pp.code AS provider_code,
-         ps.payment_method_id,
-         ps.membership_subscription_ref,
-         ps.business_profile_ref,
-         ps.provider_customer_ref,
-         ps.provider_subscription_ref,
-         ps.status,
-         ps.amount_recurring,
-         ps.currency_code,
-         ps.billing_interval,
-         ps.current_period_start_at,
-         ps.current_period_end_at,
-         ps.cancel_at_period_end,
-         ps.cancelled_at,
-         ps.created_at,
-         ps.updated_at
-       FROM module2.payment_subscriptions ps
-       JOIN module2.payment_providers pp ON pp.id = ps.provider_id
-       WHERE ps.user_id = $1
-       ORDER BY ps.created_at DESC`,
-      [userId]
+        if (paymentIntent.purpose?.startsWith("module5:event:") && ["SUCCEEDED", "FAILED", "CANCELLED"].includes(status)) {
+          const paymentStatus = status === "SUCCEEDED" ? "paid" : "failed";
+          const paymentReference = providerIntentRef || paymentIntent.id;
+
+          await pool.query(
+            `UPDATE module5.event_tickets
+             SET payment_status = $1,
+                 payment_reference = $2,
+                 amount_paid = CASE WHEN $3 = 'paid' THEN pi.amount_total ELSE module5.event_tickets.amount_paid END
+             FROM module2.payment_intents pi
+             WHERE module5.event_tickets.metadata->>'paymentIntentId' = pi.id
+               AND pi.id = $4`,
+            [paymentStatus, paymentReference, paymentStatus, paymentIntent.id]
+          );
+          // If payment succeeded, send tickets by email for associated tickets
+          if (paymentStatus === "paid") {
+            try {
+              const ticketsResult = await pool.query(
+                `SELECT t.id FROM module5.event_tickets t WHERE t.metadata->>'paymentIntentId' = $1`,
+                [paymentIntent.id]
+              );
+
+              for (const r of ticketsResult.rows) {
+                (async (ticketId) => {
+                  try {
+                    const fullTicket = await getTicket(ticketId);
+                    await sendTicketEmailByTicket(fullTicket, fullTicket.attendee_email);
+                  } catch (e) {
+                    console.error('Error sending ticket after payment for ticket', ticketId, e);
+                  }
+                })(r.id);
+              }
+            } catch (e) {
+              console.error('Failed to fetch/send tickets after payment:', e);
+            }
+          }
+        }
+
+        io.emit("payment-intent:updated", paymentIntent);
+        res.json(paymentIntent);
+      })
     );
-
-    res.json(result.rows);
-  })
-);
 
 app.post(
   "/api/module2/users/:userId/subscriptions",
@@ -674,6 +709,431 @@ app.post(
     }
   })
 );
+
+    // Module5 - Events API
+    app.get(
+      "/api/module5/events",
+      asyncHandler(async (req, res) => {
+        const q = (req.query.q || "").toString();
+        const limit = Math.min(Number(req.query.limit) || 50, 200);
+        const params = [];
+        let where = `WHERE e.status = 'published'`;
+
+        if (q) {
+          params.push(`%${q}%`);
+          where += ` AND (e.title ILIKE $${params.length} OR e.description ILIKE $${params.length} OR e.location_city ILIKE $${params.length})`;
+        }
+
+        const sql = `SELECT e.*, c.remaining_capacity, c.confirmed_tickets, c.waitlist_count
+                     FROM module5.public_events e
+                     JOIN module5.event_capacity_summary c ON c.event_id = e.id
+                     ${where}
+                     ORDER BY e.starts_at ASC
+                     LIMIT $${params.length + 1}`;
+
+        params.push(limit);
+
+        const result = await pool.query(sql, params);
+        res.json(result.rows);
+      })
+    );
+
+    app.get(
+      "/api/module5/events/:eventId",
+      asyncHandler(async (req, res) => {
+        const eventId = req.params.eventId;
+        const result = await pool.query(
+          `SELECT e.*, c.remaining_capacity, c.confirmed_tickets, c.waitlist_count
+           FROM module5.events e
+           JOIN module5.event_capacity_summary c ON c.event_id = e.id
+           WHERE e.id = $1`,
+          [eventId]
+        );
+
+        if (!result.rows[0]) {
+          return res.status(404).json({ error: "event not found" });
+        }
+
+        res.json(result.rows[0]);
+      })
+    );
+
+    app.post(
+      "/api/module5/events",
+      asyncHandler(async (req, res) => {
+        const body = req.body;
+        requireFields({ title: body.title, starts_at: body.starts_at, ends_at: body.ends_at });
+
+        const result = await pool.query(
+          `INSERT INTO module5.events (
+             organizer_user_id, organizer_business_ref, title, slug, description, banner_url,
+             type, format, privacy, status, starts_at, ends_at, timezone, location_name,
+             location_address, location_city, location_country, latitude, longitude, virtual_link,
+             capacity, waitlist_enabled, registration_opens_at, registration_closes_at,
+             is_free, price_amount, currency, refund_policy, metadata, published_at
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)
+           RETURNING *`,
+          [
+            body.organizer_user_id || null,
+            normalizeUuid(body.organizer_business_ref),
+            body.title,
+            body.slug || null,
+            body.description || "",
+            body.banner_url || null,
+            body.type || "networking",
+            body.format || "physical",
+            normalizeEventPrivacy(body.privacy),
+            body.status || "draft",
+            body.starts_at,
+            body.ends_at,
+            body.timezone || "Africa/Casablanca",
+            body.location_name || null,
+            body.location_address || null,
+            body.location_city || null,
+            body.location_country || "Maroc",
+            body.latitude || null,
+            body.longitude || null,
+            body.virtual_link || null,
+            body.capacity || 50,
+            body.waitlist_enabled === undefined ? true : Boolean(body.waitlist_enabled),
+            body.registration_opens_at || null,
+            body.registration_closes_at || null,
+            body.is_free === undefined ? true : Boolean(body.is_free),
+            body.price_amount || 0.0,
+            normalizeEventCurrency(body.currency),
+            body.refund_policy || null,
+            {
+              ...(body.metadata || {}),
+              organizer_business_name:
+                body.organizer_business_name ||
+                (!isUuid(body.organizer_business_ref) ? body.organizer_business_ref : undefined),
+            },
+            body.published_at || null,
+          ]
+        );
+
+        io.emit("module5:event:created", result.rows[0]);
+        res.status(201).json(result.rows[0]);
+      })
+    );
+
+    app.patch(
+      "/api/module5/events/:eventId",
+      asyncHandler(async (req, res) => {
+        const eventId = req.params.eventId;
+        const body = req.body;
+
+        // Build update dynamically (simple and safe approach)
+        const allowed = [
+          "title",
+          "slug",
+          "description",
+          "banner_url",
+          "type",
+          "format",
+          "privacy",
+          "status",
+          "starts_at",
+          "ends_at",
+          "timezone",
+          "location_name",
+          "location_address",
+          "location_city",
+          "location_country",
+          "latitude",
+          "longitude",
+          "virtual_link",
+          "capacity",
+          "waitlist_enabled",
+          "registration_opens_at",
+          "registration_closes_at",
+          "is_free",
+          "price_amount",
+          "currency",
+          "refund_policy",
+          "metadata",
+          "published_at",
+          "cancelled_at",
+        ];
+
+        const sets = [];
+        const params = [];
+        let idx = 1;
+
+        for (const key of allowed) {
+          if (Object.prototype.hasOwnProperty.call(body, key)) {
+            sets.push(`${key} = $${idx}`);
+            params.push(body[key]);
+            idx++;
+          }
+        }
+
+        if (sets.length === 0) {
+          return res.status(400).json({ error: "no updatable fields provided" });
+        }
+
+        params.push(eventId);
+
+        const sql = `UPDATE module5.events SET ${sets.join(", ")} WHERE id = $${idx} RETURNING *`;
+        const result = await pool.query(sql, params);
+
+        if (!result.rows[0]) {
+          return res.status(404).json({ error: "event not found" });
+        }
+
+        io.emit("module5:event:updated", result.rows[0]);
+        res.json(result.rows[0]);
+      })
+    );
+
+    // Register (create ticket) with free, paid and waitlist workflows.
+    app.post(
+      "/api/module5/events/:eventId/register",
+      asyncHandler(async (req, res) => {
+        const eventId = req.params.eventId;
+        const { attendeeUserId, attendeeName, attendeeEmail, paymentProviderCode, paymentMethodId, providerReturnUrl, providerCancelUrl } = req.body;
+
+        requireFields({ attendeeName, attendeeEmail });
+
+        const client = await pool.connect();
+
+        try {
+          await client.query("BEGIN");
+
+          // Lock the event row; capacity summary may be a view with GROUP BY so avoid FOR UPDATE on it
+          const evRow = await client.query(
+            `SELECT id, is_free, price_amount, currency, waitlist_enabled, capacity
+             FROM module5.events
+             WHERE id = $1
+             FOR UPDATE`,
+            [eventId]
+          );
+
+          if (!evRow.rows[0]) {
+            await client.query("ROLLBACK");
+            return res.status(404).json({ error: "event not found" });
+          }
+
+          // compute confirmed tickets count and remaining capacity without using the aggregated view
+          const confirmedRes = await client.query(
+            `SELECT COUNT(1) AS confirmed
+             FROM module5.event_tickets
+             WHERE event_id = $1 AND status IN ('valid', 'checked_in')`,
+            [eventId]
+          );
+
+          const confirmedTickets = Number(confirmedRes.rows[0]?.confirmed || 0);
+          const capacity = Number(evRow.rows[0].capacity || 0);
+          const remaining_capacity = Math.max(capacity - confirmedTickets, 0);
+
+          const event = {
+            ...evRow.rows[0],
+            remaining_capacity,
+            confirmed_tickets: confirmedTickets,
+          };
+
+          if (event.remaining_capacity <= 0) {
+            if (!event.waitlist_enabled) {
+              await client.query("ROLLBACK");
+              return res.status(409).json({ error: "event capacity reached" });
+            }
+
+            const positionResult = await client.query(
+              `SELECT COALESCE(MAX(position), 0) + 1 AS next_position
+               FROM module5.event_waitlist
+               WHERE event_id = $1 AND promoted_at IS NULL`,
+              [eventId]
+            );
+
+            const waitlistResult = await client.query(
+              `INSERT INTO module5.event_waitlist (
+                 event_id, user_id, email, full_name, position
+               ) VALUES ($1, $2, $3, $4, $5)
+               RETURNING *`,
+              [
+                eventId,
+                attendeeUserId || null,
+                attendeeEmail,
+                attendeeName,
+                positionResult.rows[0].next_position,
+              ]
+            );
+
+            await client.query("COMMIT");
+
+            res.status(201).json({
+              status: "waitlisted",
+              waitlist: waitlistResult.rows[0],
+            });
+            return;
+          }
+
+          if (event.is_free) {
+            const ticketResult = await client.query(
+              `INSERT INTO module5.event_tickets (
+                 event_id, attendee_user_id, attendee_name, attendee_email, status,
+                 payment_status, amount_paid, currency, metadata
+               ) VALUES ($1,$2,$3,$4,'valid','not_required',0.00,$5,$6)
+               RETURNING *`,
+              [eventId, attendeeUserId || null, attendeeName, attendeeEmail, event.currency || "MAD", { source: "api" }]
+            );
+
+            await client.query("COMMIT");
+
+            io.emit("module5:ticket:created", ticketResult.rows[0]);
+            // enqueue ticket email send (async)
+            try {
+              const fullTicket = await getTicket(ticketResult.rows[0].id);
+              setImmediate(async () => {
+                try {
+                  await sendTicketEmailByTicket(fullTicket, fullTicket.attendee_email);
+                } catch (e) {
+                  console.error("Failed to send ticket email:", e);
+                }
+              });
+            } catch (e) {
+              console.error("Failed to queue ticket email:", e);
+            }
+
+            res.status(201).json({ status: "registered", ticket: ticketResult.rows[0] });
+            return;
+          }
+
+          requireFields({ paymentProviderCode });
+
+          const provider = await findProviderByCode(paymentProviderCode, client);
+
+          if (!provider) {
+            await client.query("ROLLBACK");
+            return res.status(404).json({ error: "payment provider not found" });
+          }
+
+          const subtotal = toMoney(event.price_amount);
+          const tax = 0;
+          const total = toMoney(subtotal + tax);
+          const idempotencyKey = `module5-ticket-${eventId}-${attendeeEmail}-${Date.now()}`;
+          const providerCheckoutUrl =
+            provider.provider_type === "CMI"
+              ? `https://cmi.communium.test/checkout?amount=${total}&currency=${event.currency}&returnUrl=${encodeURIComponent(providerReturnUrl || "")}`
+              : `https://stripe.com/pay/${idempotencyKey}`;
+
+          const paymentIntentResult = await client.query(
+            `INSERT INTO module2.payment_intents (
+               user_id, provider_id, payment_method_id, purpose, amount_subtotal,
+               amount_tax, amount_total, currency_code, provider_checkout_url,
+               provider_return_url, provider_cancel_url, idempotency_key,
+               membership_subscription_ref, business_profile_ref, metadata
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+             RETURNING id, user_id, provider_id, payment_method_id, purpose, status,
+                       amount_subtotal, amount_tax, amount_total, currency_code,
+                       provider_checkout_url, provider_return_url, provider_cancel_url,
+                       idempotency_key, created_at, updated_at`,
+            [
+              attendeeUserId || null,
+              provider.id,
+              paymentMethodId || null,
+              `module5:event:${eventId}:ticket`,
+              subtotal,
+              tax,
+              total,
+              event.currency || "MAD",
+              providerCheckoutUrl,
+              providerReturnUrl || null,
+              providerCancelUrl || null,
+              idempotencyKey,
+              null,
+              null,
+              { source: "module5_event_registration", attendee_email: attendeeEmail },
+            ]
+          );
+
+          const ticketResult = await client.query(
+            `INSERT INTO module5.event_tickets (
+               event_id, attendee_user_id, attendee_name, attendee_email, status,
+               payment_status, amount_paid, currency, payment_reference,
+               payment_provider, metadata
+             ) VALUES ($1,$2,$3,$4,'valid','pending',0.00,$5,$6,$7,$8,$9)
+             RETURNING *`,
+            [
+              eventId,
+              attendeeUserId || null,
+              attendeeName,
+              attendeeEmail,
+              event.currency || "MAD",
+              paymentIntentResult.rows[0].id,
+              provider.code,
+              { paymentIntentId: paymentIntentResult.rows[0].id, source: "module5_event_registration" },
+            ]
+          );
+
+          await client.query("COMMIT");
+
+          io.emit("module5:ticket:created", ticketResult.rows[0]);
+          res.status(201).json({
+            status: "pending_payment",
+            ticket: ticketResult.rows[0],
+            paymentIntent: paymentIntentResult.rows[0],
+          });
+        } catch (error) {
+          await client.query("ROLLBACK");
+          throw error;
+        } finally {
+          client.release();
+        }
+      })
+    );
+
+    // Check-in endpoint: mark ticket as checked_in by ticket_code or ticket id
+    app.post(
+      "/api/module5/tickets/checkin",
+      asyncHandler(async (req, res) => {
+        const { ticketCode, ticketId, checkedInByUserId } = req.body;
+
+        if (!ticketCode && !ticketId) {
+          return res.status(400).json({ error: "ticketCode or ticketId is required" });
+        }
+
+        const client = await pool.connect();
+
+        try {
+          await client.query("BEGIN");
+
+          const lookup = ticketId
+            ? await client.query(`SELECT * FROM module5.event_tickets WHERE id = $1 FOR UPDATE`, [ticketId])
+            : await client.query(`SELECT * FROM module5.event_tickets WHERE ticket_code = $1 FOR UPDATE`, [ticketCode]);
+
+          const ticket = lookup.rows[0];
+
+          if (!ticket) {
+            await client.query("ROLLBACK");
+            return res.status(404).json({ error: "ticket not found" });
+          }
+
+          if (ticket.status === 'checked_in') {
+            await client.query("ROLLBACK");
+            return res.status(409).json({ error: "ticket already checked in" });
+          }
+
+          const result = await client.query(
+            `UPDATE module5.event_tickets
+             SET status = 'checked_in', checked_in_at = NOW(), checked_in_by_user_id = $1
+             WHERE id = $2
+             RETURNING *`,
+            [checkedInByUserId || null, ticket.id]
+          );
+
+          await client.query("COMMIT");
+
+          io.emit("module5:ticket:checked_in", result.rows[0]);
+          res.json(result.rows[0]);
+        } catch (error) {
+          await client.query("ROLLBACK");
+          throw error;
+        } finally {
+          client.release();
+        }
+      })
+    );
 
 app.post(
   "/api/module2/tks-purchase-orders/:orderId/mark-paid",
@@ -1230,6 +1690,236 @@ app.post(
   })
 );
 
+// Get attendees for an event (organizer view)
+app.get(
+  "/api/module5/events/:eventId/attendees",
+  asyncHandler(async (req, res) => {
+    const eventId = req.params.eventId;
+
+    const result = await pool.query(
+      `SELECT t.id, t.ticket_code, t.attendee_user_id, t.attendee_name, t.attendee_email, t.status, t.payment_status, t.amount_paid, t.currency, t.checked_in_at, t.created_at
+       FROM module5.event_tickets t
+       WHERE t.event_id = $1
+       ORDER BY t.created_at ASC`,
+      [eventId]
+    );
+
+    res.json(result.rows);
+  })
+);
+
+// Helper: fetch ticket by id
+async function getTicket(ticketId) {
+  const result = await pool.query(
+    `SELECT t.*, e.title AS event_title, e.starts_at, e.ends_at
+     FROM module5.event_tickets t
+     LEFT JOIN module5.events e ON e.id = t.event_id
+     WHERE t.id = $1`,
+    [ticketId]
+  );
+
+  return result.rows[0];
+}
+
+// Generate PDF buffer for a ticket object
+async function generateTicketPdfBuffer(ticket) {
+  const payload = {
+    ticketId: ticket.id,
+    ticketCode: ticket.ticket_code || `TICKET-${ticket.id}`,
+    eventId: ticket.event_id,
+    attendeeName: ticket.attendee_name,
+    attendeeEmail: ticket.attendee_email,
+  };
+
+  const dataString = JSON.stringify(payload);
+  const dataUrl = await QRCode.toDataURL(dataString, { errorCorrectionLevel: "M" });
+  const base64 = dataUrl.split(",")[1];
+  const imgBuffer = Buffer.from(base64, "base64");
+
+  const doc = new PDFDocument({ size: "A4", margin: 50 });
+  const chunks = [];
+  doc.on("data", (chunk) => chunks.push(chunk));
+  const pdfEnd = new Promise((resolve) => doc.on("end", () => resolve(Buffer.concat(chunks))));
+
+  doc.fontSize(20).text(ticket.event_title || "Event Ticket", { align: "center" });
+  doc.moveDown();
+  doc.fontSize(12).text(`Name: ${ticket.attendee_name || "-"}`);
+  doc.text(`Email: ${ticket.attendee_email || "-"}`);
+  doc.text(`Ticket: ${ticket.ticket_code || `TICKET-${ticket.id}`}`);
+  doc.text(`Event starts: ${ticket.starts_at ? new Date(ticket.starts_at).toLocaleString() : "-"}`);
+  doc.moveDown();
+  try {
+    doc.image(imgBuffer, { fit: [150, 150], align: "center" });
+  } catch (e) {
+    // ignore
+  }
+  doc.moveDown();
+  doc.fontSize(10).text("Please present this ticket at the event entrance.");
+  doc.end();
+
+  return await pdfEnd;
+}
+
+// Send ticket by email (helper)
+async function sendTicketEmailByTicket(ticket, recipient, subject, message) {
+  const pdfBuffer = await generateTicketPdfBuffer(ticket);
+
+  let transporter;
+
+  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === "true",
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+  } else {
+    const testAccount = await nodemailer.createTestAccount();
+    transporter = nodemailer.createTransport({
+      host: testAccount.smtp.host,
+      port: testAccount.smtp.port,
+      secure: testAccount.smtp.secure,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+  }
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || "no-reply@communium.test",
+    to: recipient,
+    subject: subject || `Your ticket for ${ticket.event_title || "Event"}`,
+    text: message || `Attached is your ticket for ${ticket.event_title || "Event"}`,
+    attachments: [
+      {
+        filename: `ticket-${ticket.id}.pdf`,
+        content: pdfBuffer,
+      },
+    ],
+  };
+
+  const info = await transporter.sendMail(mailOptions);
+  return nodemailer.getTestMessageUrl(info) || info.messageId;
+}
+
+// Generate QR code PNG for a ticket
+app.get(
+  "/api/module5/tickets/:ticketId/qr",
+  asyncHandler(async (req, res) => {
+    const ticketId = req.params.ticketId;
+    const ticket = await getTicket(ticketId);
+
+    if (!ticket) {
+      return res.status(404).json({ error: "ticket not found" });
+    }
+
+    const payload = {
+      ticketId: ticket.id,
+      ticketCode: ticket.ticket_code || `TICKET-${ticket.id}`,
+      eventId: ticket.event_id,
+      attendeeName: ticket.attendee_name,
+      attendeeEmail: ticket.attendee_email,
+    };
+
+    const dataString = JSON.stringify(payload);
+    const dataUrl = await QRCode.toDataURL(dataString, { errorCorrectionLevel: "M" });
+    const base64 = dataUrl.split(",")[1];
+    const img = Buffer.from(base64, "base64");
+
+    res.setHeader("Content-Type", "image/png");
+    res.send(img);
+  })
+);
+
+// Generate PDF ticket (includes QR)
+app.get(
+  "/api/module5/tickets/:ticketId/pdf",
+  asyncHandler(async (req, res) => {
+    const ticketId = req.params.ticketId;
+    const ticket = await getTicket(ticketId);
+
+    if (!ticket) {
+      return res.status(404).json({ error: "ticket not found" });
+    }
+
+    const payload = {
+      ticketId: ticket.id,
+      ticketCode: ticket.ticket_code || `TICKET-${ticket.id}`,
+      eventId: ticket.event_id,
+      attendeeName: ticket.attendee_name,
+      attendeeEmail: ticket.attendee_email,
+    };
+
+    const dataString = JSON.stringify(payload);
+    const dataUrl = await QRCode.toDataURL(dataString, { errorCorrectionLevel: "M" });
+    const base64 = dataUrl.split(",")[1];
+    const imgBuffer = Buffer.from(base64, "base64");
+
+    const doc = new PDFDocument({ size: "A4", margin: 50 });
+    const chunks = [];
+
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("end", () => {
+      const result = Buffer.concat(chunks);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="ticket-${ticket.id}.pdf"`
+      );
+      res.send(result);
+    });
+
+    doc.fontSize(20).text(ticket.event_title || "Event Ticket", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(12).text(`Name: ${ticket.attendee_name || "-"}`);
+    doc.text(`Email: ${ticket.attendee_email || "-"}`);
+    doc.text(`Ticket: ${ticket.ticket_code || `TICKET-${ticket.id}`}`);
+    doc.text(
+      `Event starts: ${ticket.starts_at ? new Date(ticket.starts_at).toLocaleString() : "-"}`
+    );
+    doc.moveDown();
+
+    // add QR
+    try {
+      doc.image(imgBuffer, { fit: [150, 150], align: "center" });
+    } catch (e) {
+      // ignore image errors
+    }
+
+    doc.moveDown();
+    doc.fontSize(10).text("Please present this ticket at the event entrance.");
+    doc.end();
+  })
+);
+
+// Send ticket by email (will use SMTP config if provided, otherwise ethereal)
+app.post(
+  "/api/module5/tickets/:ticketId/email",
+  asyncHandler(async (req, res) => {
+    const ticketId = req.params.ticketId;
+    const { to, subject, message } = req.body;
+
+    const ticket = await getTicket(ticketId);
+
+    if (!ticket) {
+      return res.status(404).json({ error: "ticket not found" });
+    }
+
+    const recipient = to || ticket.attendee_email;
+
+    if (!recipient) {
+      return res.status(400).json({ error: "recipient email required" });
+    }
+
+    const previewUrl = await sendTicketEmailByTicket(ticket, recipient, subject, message);
+    res.json({ ok: true, previewUrl });
+  })
+);
+
 app.patch(
   "/api/module4/conversations/:conversationId",
   asyncHandler(async (req, res) => {
@@ -1643,14 +2333,21 @@ async function findOrCreateWallet(client, userId) {
 }
 
 async function findProviderByCode(code, client = pool) {
-  const result = await client.query(
-    `SELECT id, code, display_name, provider_type, is_active
-     FROM module2.payment_providers
-     WHERE UPPER(code) = UPPER($1) AND is_active = TRUE`,
-    [code]
-  );
+  try {
+    const result = await client.query(
+      `SELECT id, code, display_name, provider_type, is_active
+       FROM module2.payment_providers
+       WHERE UPPER(code) = UPPER($1) AND is_active = TRUE`,
+      [code]
+    );
 
-  return result.rows[0];
+    return result.rows[0];
+  } catch (error) {
+    if (error?.code === "42P01") {
+      return null;
+    }
+    throw error;
+  }
 }
 
 function parseIntegerParam(value, name) {
@@ -1679,6 +2376,26 @@ function requireFields(fields) {
 
 function toMoney(value) {
   return Math.round(Number(value) * 100) / 100;
+}
+
+function isUuid(value) {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function normalizeUuid(value) {
+  return isUuid(value) ? value : null;
+}
+
+function normalizeEventPrivacy(value) {
+  if (value === "private") {
+    return "members_only";
+  }
+
+  return ["public", "members_only", "invite_only"].includes(value) ? value : "public";
+}
+
+function normalizeEventCurrency(value) {
+  return ["MAD", "TKS"].includes(value) ? value : "MAD";
 }
 
 function asyncHandler(handler) {

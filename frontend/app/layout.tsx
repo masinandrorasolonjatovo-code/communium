@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Communium | Module 2",
-  description: "Pilotage des paiements, wallets Tks et facturation Communium.",
+  title: "Communium | Module 5 — Événements",
+  description: "Découvre, crée et gère des événements professionnels avec inscription et billets.",
 };
 
 export default function RootLayout({
