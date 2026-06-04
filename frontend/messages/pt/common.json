@@ -1,0 +1,33 @@
+{
+  "navigation": {
+    "home": "InÃ­cio",
+    "about": "Sobre",
+    "services": "Servicos",
+    "contact": "Contato",
+    "profile": "Perfil",
+    "logout": "Sair"
+  },
+  "common": {
+    "welcome": "Bem-vindo ao Communium",
+    "loading": "Carregando...",
+    "error": "Ocorreu um erro",
+    "success": "Sucesso",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "delete": "Deletar",
+    "edit": "Editar"
+  },
+  "auth": {
+    "login": "Entrar",
+    "signup": "Registrar",
+    "email": "E-mail",
+    "password": "Senha",
+    "rememberMe": "Lembrar-me"
+  },
+  "membership": {
+    "free": "Gratuito",
+    "silver": "Prata",
+    "gold": "Ouro",
+    "platinum": "Platina"
+  }
+}

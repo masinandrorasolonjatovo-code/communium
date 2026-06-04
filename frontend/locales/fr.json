@@ -1,0 +1,15 @@
+{
+  "app": {
+    "name": "Communium",
+    "defaultLocale": "fr"
+  },
+  "governance": {
+    "privacy": "Confidentialite",
+    "security": "Securite",
+    "dataRights": "Droits sur les donnees",
+    "business": "Profil business",
+    "billing": "Facturation",
+    "partners": "Partenaires",
+    "reports": "Signalements"
+  }
+}

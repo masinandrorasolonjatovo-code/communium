@@ -1,0 +1,36 @@
+{
+  "navigation": {
+    "home": "Home",
+    "about": "About",
+    "services": "Services",
+    "contact": "Contact",
+    "profile": "Profile",
+    "logout": "Logout",
+    "dashboard": "Dashboard",
+    "auth": "Auth",
+    "signIn": "Sign In"
+  },
+  "common": {
+    "welcome": "Welcome to Communium",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "rememberMe": "Remember me"
+  },
+  "membership": {
+    "free": "Free",
+    "silver": "Silver",
+    "gold": "Gold",
+    "platinum": "Platinum"
+  }
+}

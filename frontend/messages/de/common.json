@@ -1,0 +1,33 @@
+{
+  "navigation": {
+    "home": "Startseite",
+    "about": "Ãœber uns",
+    "services": "Dienstleistungen",
+    "contact": "Kontakt",
+    "profile": "Profil",
+    "logout": "Abmelden"
+  },
+  "common": {
+    "welcome": "Willkommen bei Communium",
+    "loading": "Wird geladen...",
+    "error": "Ein Fehler ist aufgetreten",
+    "success": "Erfolg",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Loschen",
+    "edit": "Bearbeiten"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "signup": "Registrieren",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "rememberMe": "Mich merken"
+  },
+  "membership": {
+    "free": "Kostenlos",
+    "silver": "Silber",
+    "gold": "Gold",
+    "platinum": "Platin"
+  }
+}

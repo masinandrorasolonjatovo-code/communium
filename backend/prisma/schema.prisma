@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  VIP
+  Regular
+  Youth
+}
+
+enum MembershipTier {
+  Free
+  Silver
+  Gold
+  Platinum
+}
+
+enum PrivacyLevel {
+  Public
+  Private
+  ContactsOnly
+}
+
+enum DocumentType {
+  CIN
+  PASSPORT
+  DRIVING_LICENSE
+}
+
+enum AccountType {
+  PERSONAL
+  BUSINESS
+}
+
+enum VerificationStatus {
+  NON_VERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum VerificationDocumentType {
+  CIN
+  PASSPORT
+  RC
+  ICE
+  IF
+  COMPANY_STATUTES
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  role      UserRole
+  accountType AccountType @default(PERSONAL)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile    Profile?
+  membership Membership?
+  verification Verification?
+  reviewedVerifications Verification[] @relation("VerificationReviewer")
+
+  @@map("users")
+}
+
+model Membership {
+  id        Int             @id @default(autoincrement())
+  tier      MembershipTier
+  userId    Int             @unique
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@map("memberships")
+}
+
+model Profile {
+  id                    Int             @id @default(autoincrement())
+  userId                Int             @unique
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Informations personnelles de base
+  firstName             String?
+  lastName              String?
+  dateOfBirth           DateTime?
+  phone                 String?
+  email                 String?         // Peut être différent de l'email de connexion
+
+  // Adresse
+  country               String?
+  city                  String?
+  address               String?
+
+  // Documents d'identité
+  identityVerified      Boolean         @default(false)
+  identityDocumentType  DocumentType?
+  identityDocumentNumber String?
+  identityDocumentUrl   String?         // URL du fichier uploadé
+
+  // Photo de profil
+  profilePictureUrl     String?
+  profilePictureCrop    Json?           // Coordonnées de recadrage {x, y, width, height}
+
+  // Profession actuelle
+  currentJobTitle       String?
+  currentCompany        String?
+  currentIndustry       String?
+
+  // CV
+  cvUrl                 String?         // URL du fichier PDF
+
+  // URL publique
+  publicProfileUrl      String?         @unique
+
+  // Paramètres de confidentialité
+  privacySettings       ProfileSettings?
+
+  // Relations
+  professionalExperiences ProfessionalExperience[]
+  interests             ProfileInterest[]
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@map("profiles")
+}
+
+model ProfessionalExperience {
+  id          Int      @id @default(autoincrement())
+  profileId   Int
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  jobTitle    String
+  company     String
+  industry    String?
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean  @default(false)
+  description String?
+  location    String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([profileId])
+  @@map("professional_experiences")
+}
+
+model Interest {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  category    String?
+
+  // Relations
+  profiles    ProfileInterest[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("interests")
+}
+
+model ProfileInterest {
+  id          Int      @id @default(autoincrement())
+  profileId   Int
+  interestId  Int
+
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  interest    Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, interestId])
+  @@index([profileId])
+  @@index([interestId])
+  @@map("profile_interests")
+}
+
+model ProfileSettings {
+  id                    Int          @id @default(autoincrement())
+  profileId             Int          @unique
+  profile               Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  // Visibilité des informations
+  showEmail             Boolean      @default(false)
+  showPhone             Boolean      @default(false)
+  showDateOfBirth       Boolean      @default(false)
+  showAddress           Boolean      @default(false)
+  showProfessionalExp   Boolean      @default(true)
+  showInterests         Boolean      @default(true)
+  showCV                Boolean      @default(false)
+
+  // Niveau de confidentialité général
+  profileVisibility     PrivacyLevel @default(Public)
+
+  // Qui peut voir le profil
+  allowSearchEngines    Boolean      @default(true)
+  allowNetworkingRequests Boolean    @default(true)
+
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@map("profile_settings")
+}
+
+model Verification {
+  id              String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId          Int                  @unique
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            AccountType          @default(PERSONAL)
+  status          VerificationStatus   @default(NON_VERIFIED)
+  rejectionReason String?
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedBy      Int?
+  reviewer        User?                @relation("VerificationReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  documents       VerificationDocument[]
+  notifications   VerificationNotification[]
+  auditLogs       VerificationAuditLog[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@map("verifications")
+}
+
+model VerificationDocument {
+  id             String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  verificationId String                   @db.Uuid
+  verification   Verification             @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+  documentType   VerificationDocumentType
+  fileUrl        String
+  fileName       String
+  mimeType       String
+  fileSize       Int                      @default(0)
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  accessLogs     VerificationDocumentAccessLog[]
+
+  @@unique([verificationId, documentType])
+  @@map("verification_documents")
+}
+
+model VerificationNotification {
+  id             String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId         Int
+  verificationId String?            @db.Uuid
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verification   Verification?      @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+  status         VerificationStatus @default(NON_VERIFIED)
+  title          String
+  message        String
+  createdAt      DateTime           @default(now())
+  readAt         DateTime?
+
+  @@map("verification_notifications")
+}
+
+model VerificationAuditLog {
+  id             String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  verificationId String        @db.Uuid
+  verification   Verification  @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+  actorUserId    Int?
+  actorUser      User?         @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  action         String
+  details        Json?
+  createdAt      DateTime      @default(now())
+
+  @@map("verification_audit_logs")
+}
+
+model VerificationDocumentAccessLog {
+  id          String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  documentId  String               @db.Uuid
+  document    VerificationDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  viewerUserId Int?
+  viewerUser  User?                @relation(fields: [viewerUserId], references: [id], onDelete: SetNull)
+  viewerType  String
+  accessReason String
+  createdAt   DateTime             @default(now())
+
+  @@map("verification_document_access_logs")
+}

@@ -1,0 +1,33 @@
+{
+  "navigation": {
+    "home": "Главная",
+    "about": "О нас",
+    "services": "Услуги",
+    "contact": "Контакты",
+    "profile": "Профиль",
+    "logout": "Выход"
+  },
+  "common": {
+    "welcome": "Добро пожаловать в Communium",
+    "loading": "Загрузка...",
+    "error": "Произошла ошибка",
+    "success": "Успешно",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "delete": "Удалить",
+    "edit": "Редактировать"
+  },
+  "auth": {
+    "login": "Вход",
+    "signup": "Регистрация",
+    "email": "Электронная почта",
+    "password": "Пароль",
+    "rememberMe": "Запомнить меня"
+  },
+  "membership": {
+    "free": "Бесплатно",
+    "silver": "Серебро",
+    "gold": "Золото",
+    "platinum": "Платина"
+  }
+}
