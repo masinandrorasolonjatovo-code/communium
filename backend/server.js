@@ -1,15 +1,4 @@
 const express = require("express");
-<<<<<<< HEAD
-const app = express();
-
-app.get("/", (req, res) => {
-  res.send("Backend OK");
-});
-
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
-});
-=======
 const cors = require("cors");
 const http = require("http");
 const path = require("path");
@@ -616,4 +605,3 @@ attachNotificationsRealtime(realtime);
 server.listen(PORT, () => {
   console.log(`Communium backend running on http://localhost:${PORT}`);
 });
->>>>>>> 12f16f5bfd58ead24e306b997f29204f1a9543d8
