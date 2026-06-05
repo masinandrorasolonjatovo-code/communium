@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="600" viewBox="0 0 1000 600">
+  <style>
+    .box { fill:#f8fafc; stroke:#0f172a; stroke-width:2px; rx:8; }
+    .text { font-family: Inter, Arial, sans-serif; fill:#0f172a; font-size:14px; }
+    .title { font-weight:700; font-size:16px; }
+    .arrow { stroke:#0f172a; stroke-width:2; fill:none; marker-end:url(#arrow); }
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0f172a" />
+    </marker>
+  </defs>
+
+  <!-- User -->
+  <rect x="40" y="40" width="180" height="70" class="box"/>
+  <text x="130" y="70" text-anchor="middle" class="text title">Utilisateur</text>
+  <text x="130" y="92" text-anchor="middle" class="text">(Visiteur / Participant)</text>
+
+  <!-- Frontend -->
+  <rect x="260" y="40" width="220" height="90" class="box"/>
+  <text x="370" y="70" text-anchor="middle" class="text title">Frontend</text>
+  <text x="370" y="92" text-anchor="middle" class="text">Interface — Listing / Inscription</text>
+
+  <!-- Backend -->
+  <rect x="520" y="40" width="220" height="90" class="box"/>
+  <text x="630" y="70" text-anchor="middle" class="text title">Backend</text>
+  <text x="630" y="92" text-anchor="middle" class="text">Logique métier, génération billets</text>
+
+  <!-- Database -->
+  <rect x="260" y="180" width="220" height="80" class="box"/>
+  <text x="370" y="210" text-anchor="middle" class="text title">Base de données</text>
+  <text x="370" y="232" text-anchor="middle" class="text">Événements, Billets, Waitlist</text>
+
+  <!-- Email -->
+  <rect x="520" y="180" width="220" height="80" class="box"/>
+  <text x="630" y="210" text-anchor="middle" class="text title">Service Email</text>
+  <text x="630" y="232" text-anchor="middle" class="text">Envoi PDF / Notifications</text>
+
+  <!-- Payment -->
+  <rect x="760" y="320" width="180" height="80" class="box"/>
+  <text x="850" y="350" text-anchor="middle" class="text title">Fournisseur de paiement</text>
+  <text x="850" y="372" text-anchor="middle" class="text">(ex. Stripe, CMI)</text>
+
+  <!-- Arrows -->
+  <path d="M220 75 L260 75" class="arrow"/>
+  <path d="M480 75 L520 75" class="arrow"/>
+  <path d="M630 130 L630 180" class="arrow"/>
+  <path d="M370 130 L370 180" class="arrow"/>
+  <path d="M740 220 L740 260 L740 300 L760 300" class="arrow"/>
+  <path d="M630 180 L630 260" class="arrow"/>
+
+  <!-- Notes -->
+  <text x="140" y="140" class="text">1. L'utilisateur navigue et s'inscrit</text>
+  <text x="140" y="160" class="text">2. Le frontend envoie les données au backend</text>
+  <text x="140" y="180" class="text">3. Backend crée le billet et stocke en base</text>
+  <text x="140" y="200" class="text">4. Backend génère PDF + QR et déclenche l'envoi email</text>
+  <text x="140" y="220" class="text">5. Si paiement requis → redirection vers le fournisseur</text>
+
+  <!-- Footer -->
+  <text x="500" y="580" text-anchor="middle" class="text">Schéma simplifié : Flux principal du Module 5 — prêt à insérer dans Word</text>
+</svg>

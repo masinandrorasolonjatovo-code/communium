@@ -1,0 +1,343 @@
+╔════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                 SCHÉMA GLOBAL MODULE 5 - ARCHITECTURE                              ║
+║                                                                                                    ║
+║                    Gestion Complète des Événements Professionnels - Communium                      ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+
+                                          ┌──────────────────┐
+                                          │   UTILISATEUR    │
+                                          │  (Frontend User) │
+                                          └────────┬─────────┘
+                                                   │
+                                    ┌──────────────┼──────────────┐
+                                    │              │              │
+                                    ▼              ▼              ▼
+                          ┌─────────────────┐  ┌──────────────┐  ┌──────────────┐
+                          │ Browse Events   │  │ Create Event │  │ Register     │
+                          │ (Listing)       │  │ (Admin)      │  │ (Free/Paid)  │
+                          └────────┬────────┘  └──────┬───────┘  └──────┬───────┘
+                                   │                  │                 │
+                    ┌──────────────┴──────────────────┴─────────────────┴──────────────┐
+                    │                                                                   │
+                    ▼                                                                   ▼
+        ┌────────────────────────────────┐                            ┌────────────────────────┐
+        │    FRONTEND (Next.js 14)       │                            │  BACKEND (Express)     │
+        │    Port: 3001                  │                            │  Port: 5000            │
+        ├────────────────────────────────┤                            ├────────────────────────┤
+        │ • app/module5/page.tsx         │◄───────────API Calls─────► │ • GET /events          │
+        │ • [eventId]/page.tsx           │      (CORS Enabled)        │ • POST /events         │
+        │ • create/page.tsx              │                            │ • POST /register       │
+        │ • lib/module5-api.ts           │                            │ • GET /tickets/:id/pdf │
+        │ • Tailwind CSS UI              │                            │ • POST /checkin        │
+        │ • React State Management       │                            │ • WebSocket broadcast  │
+        └───────────┬────────────────────┘                            └────────────┬───────────┘
+                    │                                                              │
+                    │ ┌────────────────────────────────────────────────────────┐  │
+                    │ │                                                        │  │
+                    ▼ ▼                                                        ▼  ▼
+              ┌────────────────────────────────────────────────────────────────────────────┐
+              │                         PostgreSQL Database                               │
+              │                                                                            │
+              │  ┌─────────────────────────┐  ┌────────────────────┐  ┌───────────────┐  │
+              │  │  module5.events         │  │ module5.event_     │  │   module5.    │  │
+              │  │                         │  │ tickets            │  │ event_        │  │
+              │  │ • id (UUID)             │  │                    │  │ waitlist      │  │
+              │  │ • title                 │  │ • id (UUID)        │  │               │  │
+              │  │ • starts_at, ends_at    │  │ • event_id (FK)    │  │ • id (UUID)   │  │
+              │  │ • location_*            │  │ • attendee_name    │  │ • event_id    │  │
+              │  │ • is_free               │  │ • status           │  │ • position    │  │
+              │  │ • price_amount          │  │ • payment_status   │  │ • promoted_at │  │
+              │  │ • capacity              │  │ • ticket_code      │  └───────────────┘  │
+              │  │ • waitlist_enabled      │  │ • checked_in_at    │                     │
+              │  └─────────────────────────┘  └────────────────────┘                     │
+              │                                                                            │
+              │  ┌────────────────────────────────────────────────────────────────────┐  │
+              │  │  module5.event_capacity_summary (VUE)                            │  │
+              │  │  • Calcule : remaining_capacity, confirmed_tickets, waitlist_count
+              │  └────────────────────────────────────────────────────────────────────┘  │
+              │                                                                            │
+              └────────────────────────────────────────────────────────────────────────────┘
+                         │                              │                        │
+            ┌────────────┴────────────┐      ┌──────────┴──────────┐  ┌─────────┴──────┐
+            │                         │      │                    │  │                │
+            ▼                         ▼      ▼                    ▼  ▼                ▼
+      ┌──────────────┐         ┌──────────────────┐       ┌──────────────────┐  ┌────────────┐
+      │    LIBRE     │         │  PAIEMENT        │       │     EMAIL        │  │  PAIEMENT  │
+      │  (Gratuit)   │         │  INTENT          │       │   (Nodemailer)   │  │ PROVIDERS  │
+      │              │         │                  │       │                  │  │            │
+      │ 1. Vérifier  │         │ 1. Créer intent  │       │ • PDF generation │  │ • CMI      │
+      │    capacité  │         │    (CREATED)     │       │ • QR code embed  │  │ • Stripe   │
+      │ 2. Créer     │         │ 2. Créer ticket  │       │ • Send via SMTP  │  │ • PayPal   │
+      │    ticket    │         │    (pending)     │       │ • Ethereal test  │  │            │
+      │ 3. Gen PDF+  │         │ 3. Retourner URL │       │ • Preview link   │  │ Config en  │
+      │    QR        │         │    paiement      │       │                  │  │ cours d'   │
+      │ 4. Envoyer   │         │ 4. Attendre      │       │ trigger:         │  │ initialise │
+      │    email     │         │    confirmation  │       │ • Successful pay │  │            │
+      │              │         │ 5. Update status │       │ • Free register  │  │ module2.*  │
+      └──────────────┘         │    (SUCCEEDED)   │       │                  │  │            │
+                               │ 6. Envoyer email │       └──────────────────┘  └────────────┘
+                               └──────────────────┘
+
+
+╔════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                   FLUX D'INSCRIPTION DÉTAILLÉ                                     ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+
+                              ÉVÉNEMENT GRATUIT (FREE)
+                              ══════════════════════════
+
+    Utilisateur                                   Backend                          Database
+        │                                            │                               │
+        ├─ Remplit form ─────────────────────────────┤                               │
+        │  (nom + email)                            │                               │
+        │                                            │                               │
+        │  POST /register ────────────────────────────┤                               │
+        │     ├─ attendeeName: "John Doe"           │                               │
+        │     ├─ attendeeEmail: "john@email.com"    │                               │
+        │     └─ paymentProviderCode: null          │                               │
+        │                                            ├─ BEGIN TRANSACTION ──────────┤
+        │                                            ├─ Vérifier capacité   ────────┤
+        │                                            ├─ Créer ticket ───────────────┤
+        │                                            │   status='valid'             │
+        │                                            │   payment_status='not_req'   │
+        │                                            ├─ COMMIT ──────────────────────┤
+        │                                            │                               │
+        │                                            ├─ Generate PDF + QR ──────────┤
+        │                                            │   [Async - setImmediate]     │
+        │                                            │                               │
+        │                                            ├─ Send Email ──────────────────┤
+        │                                            │   • Nodemailer SMTP config   │
+        │                                            │   • Attachments: PDF         │
+        │                                            │   • Ethereal preview link    │
+        │                                            │                               │
+        │ ◄────────── JSON Response ─────────────────┤                               │
+        │   ├─ status: "registered"                  │                               │
+        │   ├─ ticket: {...}                         │                               │
+        │   └─ previewUrl: "https://ethereal..."    │                               │
+        │                                            │                               │
+        ├─ Show Success Message                     │                               │
+        ├─ Download PDF Button                      │                               │
+        └─ Display QR Code                          │                               │
+
+
+                            ÉVÉNEMENT PAYANT (PAID)
+                            ══════════════════════════
+
+    Utilisateur                    Backend                Payment            Database
+        │                             │                  Provider               │
+        │                             │                    │                     │
+        ├─ Sélectionne provider ─────┤                     │                     │
+        ├─ Remplit form ─────────────┤                     │                     │
+        │                             │                    │                     │
+        │  POST /register ────────────┤                     │                     │
+        │     ├─ attendeeName: "Jane" │                    │                     │
+        │     ├─ attendeeEmail: "j@.. │                    │                     │
+        │     └─ paymentProviderCode: "CMI"
+        │                             │                    │                     │
+        │                             ├─ BEGIN TX ────────────────────────────┤
+        │                             ├─ Lookup provider ─────────────────────┤
+        │                             ├─ Créer payment_intent ──────────────┤
+        │                             │   status = 'CREATED'                │
+        │                             ├─ Créer ticket ──────────────────────┤
+        │                             │   status = 'valid'                  │
+        │                             │   payment_status = 'pending'        │
+        │                             ├─ COMMIT ────────────────────────────┤
+        │                             │                                     │
+        │ ◄── JSON Response ──────────┤                                      │
+        │   ├─ status: "pending_payment"                                    │
+        │   ├─ paymentIntent.provider_checkout_url: "https://cmi.../pay"   │
+        │   └─ ticket: {...}                                                │
+        │                             │                                     │
+        ├─ Redirect to URL ──────────────────────────────────────────────────┤
+        │                             │                                     │
+        │ ◄─────────────── PAYMENT PAGE ────────────────────────────────────┤
+        │                             │                                     │
+        ├─ Fill payment form         │                                      │
+        ├─ Confirm payment           │                                      │
+        │                             │                    ├─ Process ────┤
+        │                             │                    │              │
+        │                             │                    └─ Authorize ──┤
+        │                             │                       ✓ SUCCESS   │
+        │                             │                       │           │
+        │                             │ ◄─ Confirm success ────┤           │
+        │ ◄──────── Redirect back ────┤                        │           │
+        │                             │                        │           │
+        │                             ├─ PATCH /payment-intent ├──────────┤
+        │                             │   status = 'SUCCEEDED'            │
+        │                             ├─ Update ticket ───────┤
+        │                             │   payment_status='paid'
+        │                             ├─ Generate PDF + QR    │
+        │                             ├─ Send Email ───────────┤
+        │                             │                        │
+        ├─ Show Success              │                        │
+        ├─ Download PDF              │                        │
+        └─ Display QR                │                        │
+
+
+╔════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                    GESTION DE LA CAPACITÉ                                         ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+    Événement: Capacité 50 places
+    ├─ 2 billets confirmés (valid)
+    ├─ Places restantes: 48
+    │
+    └─ Si nouvel inscrit:
+       ├─ Capacité > 0 ? → Créer ticket, status='valid'
+       └─ Capacité = 0 + waitlist ? 
+          ├─ OUI → Ajouter à event_waitlist
+          │        ├─ Position déterminée (MAX+1)
+          │        ├─ Email: "Vous êtes en position #X"
+          │        └─ Attendre promotion
+          └─ NON → Erreur "Événement complet"
+
+    Quand place se libère:
+    ├─ Ticket marqué 'cancelled'
+    ├─ Capacité +1
+    ├─ TRIGGER: Promouvoir waitlist
+    │  ├─ Créer nouveau ticket
+    │  ├─ Mettre à jour waitlist (promoted_at=NOW)
+    │  └─ Envoyer email d'invitation
+    └─ Réitérer jusqu'à places pleines
+
+
+╔════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                  GÉNÉRATION DE BILLET (PDF)                                       ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+    Données du billet:
+    ├─ ticketId: "a1b2c3d4-..."
+    ├─ ticketCode: "TICKET-a1b2c3d4"
+    ├─ eventId: "28249f2e-..."
+    ├─ attendeeName: "John Doe"
+    └─ attendeeEmail: "john@example.com"
+    
+           │
+           ▼
+    
+    PDF Generation (PDFKit):
+    ├─ Size: A4 (210 x 297 mm)
+    ├─ Margin: 50px
+    │
+    ├─ HEADER
+    │  └─ Title (20pt): "Roundtable Tech 2026"
+    │
+    ├─ BODY
+    │  ├─ Name: 12pt
+    │  ├─ Email: 12pt
+    │  ├─ Ticket Code: 12pt
+    │  └─ Event Date: 12pt
+    │
+    ├─ QR CODE
+    │  ├─ Data: JSON stringify({ ticketId, eventId, ... })
+    │  ├─ Format: PNG base64
+    │  ├─ Size: 150x150px
+    │  ├─ Error Correction: M
+    │  └─ Embedded as: Image in PDF
+    │
+    └─ FOOTER
+       └─ Message (10pt): "Please present this ticket at the event entrance."
+    
+           │
+           ▼
+    
+    Buffer returned → Email Attachment
+    
+           │
+           ▼
+    
+    User receives email:
+    ├─ Subject: "Your ticket for Roundtable Tech 2026"
+    ├─ Body: "Attached is your ticket for Roundtable Tech 2026"
+    └─ Attachment: ticket-{id}.pdf (contient le QR code)
+
+
+╔════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                      CHECK-IN WORKFLOW                                            ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+    À l'entrée de l'événement:
+    
+    1. QR Code Scan (Mobile)
+    │  └─ JSON Payload: { ticketId: "abc...", eventId: "def...", ... }
+    │
+    2. POST /api/module5/tickets/checkin
+    │  ├─ Body: { ticketCode, ticketId, checkedInByUserId }
+    │  │
+    │  └─ Backend:
+    │     ├─ BEGIN TX
+    │     ├─ Lookup ticket (FOR UPDATE)
+    │     ├─ Verify status != 'checked_in' (prevent double check-in)
+    │     ├─ UPDATE status = 'checked_in'
+    │     ├─ UPDATE checked_in_at = NOW()
+    │     ├─ UPDATE checked_in_by_user_id = organizer_id
+    │     ├─ COMMIT
+    │     └─ WebSocket broadcast: "module5:ticket:checked_in"
+    │
+    3. UI Update
+    │  └─ Green checkmark / Success message
+    │
+    4. Entry allowed
+    │  └─ Physical access granted
+
+
+╔════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                   CONFIGURATION & DÉPLOIEMENT                                     ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+    CORS Configuration:
+    ├─ Allowed Origins: http://localhost:3000, http://localhost:3001
+    ├─ Methods: GET, POST, PATCH, DELETE
+    └─ Headers: Content-Type, Accept
+
+    Email Configuration (Development):
+    ├─ Provider: Ethereal (Test Account Auto-Created)
+    ├─ No real email sent
+    ├─ Preview URL returned: https://ethereal.email/message/[ID]
+    └─ Perfect for testing
+
+    Email Configuration (Production):
+    ├─ Provider: Custom SMTP (Gmail, SendGrid, etc.)
+    ├─ Config via ENV vars:
+    │  ├─ SMTP_HOST
+    │  ├─ SMTP_PORT
+    │  ├─ SMTP_USER
+    │  ├─ SMTP_PASS
+    │  ├─ SMTP_SECURE
+    │  └─ EMAIL_FROM
+    └─ Real emails sent to users
+
+    Database Transactions:
+    ├─ BEGIN / COMMIT / ROLLBACK
+    ├─ Isolation Level: READ COMMITTED (default)
+    ├─ Row Locking: FOR UPDATE on module5.events
+    └─ Prevents race conditions on capacity
+
+    Error Handling:
+    ├─ PostgreSQL 42P01 (Missing table):
+    │  ├─ Endpoint /api/module2/providers → returns []
+    │  └─ Graceful degradation (no crash)
+    ├─ Type Coercion:
+    │  ├─ price_amount: string | number
+    │  └─ Automatic conversion: Number(val).toFixed(2)
+    └─ CORS Issues:
+       └─ Dynamic origin validation
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+Légende des symboles:
+  ◄──────┤ Requête/Réponse HTTP
+  ├─ ├─ ├─ Arborescence / Flux décisionnel
+  │  └─ Nœud/Feuille
+  ▼     Direction du flux
+  ✓     Succès
+  ├─ Connexion / Relation
+  │
+  ═══ Section/Titre
+  ┌─┐ Boîte/Container
+  └─┘
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
