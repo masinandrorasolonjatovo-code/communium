@@ -40,6 +40,13 @@ export default clerkMiddleware(async (auth, request) => {
     return NextResponse.next();
   }
 
+  // Redirect root path to default locale
+  if (request.nextUrl.pathname === '/') {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = `/${defaultLocale}`;
+    return NextResponse.redirect(redirectUrl);
+  }
+
   const locale = resolveRequestLocale(request.nextUrl.pathname);
 
   if (isLocale(locale) && !isSupportedLocale(locale)) {
