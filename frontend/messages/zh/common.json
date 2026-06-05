@@ -1,0 +1,33 @@
+{
+  "navigation": {
+    "home": "主页",
+    "about": "关于",
+    "services": "服务",
+    "contact": "联系",
+    "profile": "个人资料",
+    "logout": "退出登录"
+  },
+  "common": {
+    "welcome": "欢迎来到 Communium",
+    "loading": "加载中...",
+    "error": "发生错误",
+    "success": "成功",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑"
+  },
+  "auth": {
+    "login": "登录",
+    "signup": "注册",
+    "email": "电子邮件",
+    "password": "密码",
+    "rememberMe": "记住我"
+  },
+  "membership": {
+    "free": "免费",
+    "silver": "白银",
+    "gold": "黄金",
+    "platinum": "铂金"
+  }
+}

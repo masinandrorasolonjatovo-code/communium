@@ -1,0 +1,1631 @@
+:root {
+  color-scheme: light;
+  --canvas: #edf3fb;
+  --canvas-strong: #f7faff;
+  --canvas-end: #e6eef9;
+  --panel: rgba(255, 255, 255, 0.84);
+  --panel-strong: rgba(255, 255, 255, 0.94);
+  --panel-elevated: rgba(255, 255, 255, 0.98);
+  --panel-inset: rgba(248, 250, 252, 0.92);
+  --panel-muted: rgba(248, 250, 252, 0.72);
+  --line-soft: rgba(148, 163, 184, 0.22);
+  --line-strong: rgba(148, 163, 184, 0.34);
+  --ink-950: #0f172a;
+  --ink-800: #172554;
+  --ink-700: #334155;
+  --ink-600: #475569;
+  --ink-500: #64748b;
+  --text-primary: var(--ink-950);
+  --text-secondary: var(--ink-700);
+  --text-muted: var(--ink-500);
+  --surface-1: var(--panel);
+  --surface-2: var(--panel-strong);
+  --surface-3: var(--panel-elevated);
+  --brand-700: #1d4ed8;
+  --brand-600: #2563eb;
+  --brand-500: #3b82f6;
+  --teal-500: #0f8b8d;
+  --shadow-soft: 0 18px 50px rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 28px 80px rgba(15, 23, 42, 0.12);
+  --lift-shadow: 0 28px 64px rgba(15, 23, 42, 0.14);
+  --field-bg: rgba(248, 250, 252, 0.94);
+  --field-line: rgba(148, 163, 184, 0.18);
+  --field-focus: rgba(37, 99, 235, 0.36);
+  --field-focus-ring: rgba(37, 99, 235, 0.08);
+  --header-shell-bg:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.18), transparent 26%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.92) 58%, rgba(29, 78, 216, 0.9));
+  --header-shell-border: rgba(148, 163, 184, 0.18);
+  --header-foreground: #ffffff;
+  --header-muted: rgba(255, 255, 255, 0.72);
+  --header-control-bg: rgba(255, 255, 255, 0.08);
+  --header-control-border: rgba(255, 255, 255, 0.14);
+  --header-active-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(148, 197, 255, 0.18));
+  --header-cta-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(219, 234, 254, 0.96));
+  --header-cta-ink: #0f172a;
+  --dropdown-bg: rgba(255, 255, 255, 0.98);
+  --dropdown-ink: #0f172a;
+  --dropdown-muted: #64748b;
+  --dropdown-icon-bg: rgba(226, 232, 240, 0.64);
+  --tooltip-bg: rgba(15, 23, 42, 0.94);
+  --theme-track-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(219, 234, 254, 0.92));
+  --theme-track-border: rgba(37, 99, 235, 0.22);
+  --theme-thumb-bg: linear-gradient(135deg, #f59e0b, #fbbf24);
+  --theme-thumb-ink: #ffffff;
+  --theme-thumb-shadow: 0 8px 18px rgba(245, 158, 11, 0.32);
+  --theme-icon-passive: #1d4ed8;
+  --ambient-grid: rgba(29, 78, 216, 0.08);
+  --ambient-line: rgba(37, 99, 235, 0.12);
+  --ambient-orb-one: rgba(59, 130, 246, 0.22);
+  --ambient-orb-two: rgba(14, 165, 233, 0.18);
+  --ambient-orb-three: rgba(15, 139, 141, 0.14);
+  --radius-control: 14px;
+  --radius-pill: 16px;
+  --radius-surface: 22px;
+  --control-height: 42px;
+  --control-height-compact: 34px;
+  --button-shadow-primary: 0 14px 28px rgba(37, 99, 235, 0.16);
+  --button-shadow-soft: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #081120;
+  --canvas-strong: #0c172a;
+  --canvas-end: #050c18;
+  --panel: rgba(10, 18, 34, 0.84);
+  --panel-strong: rgba(12, 21, 39, 0.94);
+  --panel-elevated: rgba(18, 28, 50, 0.98);
+  --panel-inset: rgba(15, 23, 42, 0.9);
+  --panel-muted: rgba(15, 23, 42, 0.78);
+  --line-soft: rgba(148, 163, 184, 0.16);
+  --line-strong: rgba(148, 163, 184, 0.3);
+  --ink-950: #e7eefb;
+  --ink-800: #dbeafe;
+  --ink-700: #cbd5e1;
+  --ink-600: #a8b7cd;
+  --ink-500: #94a3b8;
+  --text-primary: var(--ink-950);
+  --text-secondary: var(--ink-700);
+  --text-muted: var(--ink-500);
+  --surface-1: var(--panel);
+  --surface-2: var(--panel-strong);
+  --surface-3: var(--panel-elevated);
+  --brand-700: #60a5fa;
+  --brand-600: #3b82f6;
+  --brand-500: #38bdf8;
+  --teal-500: #2dd4bf;
+  --shadow-soft: 0 22px 60px rgba(2, 6, 23, 0.42);
+  --shadow-card: 0 34px 90px rgba(2, 6, 23, 0.56);
+  --lift-shadow: 0 30px 72px rgba(2, 6, 23, 0.48);
+  --field-bg: rgba(15, 23, 42, 0.84);
+  --field-line: rgba(148, 163, 184, 0.18);
+  --field-focus: rgba(96, 165, 250, 0.44);
+  --field-focus-ring: rgba(96, 165, 250, 0.12);
+  --header-shell-bg:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.12), transparent 26%),
+    linear-gradient(135deg, rgba(2, 6, 23, 0.98), rgba(15, 23, 42, 0.96) 52%, rgba(30, 41, 59, 0.98));
+  --header-shell-border: rgba(96, 165, 250, 0.14);
+  --header-foreground: #eff6ff;
+  --header-muted: rgba(226, 232, 240, 0.74);
+  --header-control-bg: rgba(15, 23, 42, 0.74);
+  --header-control-border: rgba(148, 163, 184, 0.16);
+  --header-active-bg: linear-gradient(180deg, rgba(96, 165, 250, 0.18), rgba(37, 99, 235, 0.18));
+  --header-cta-bg: linear-gradient(135deg, rgba(30, 41, 59, 0.94), rgba(15, 23, 42, 0.98));
+  --header-cta-ink: #eff6ff;
+  --dropdown-bg: rgba(9, 15, 28, 0.98);
+  --dropdown-ink: #eff6ff;
+  --dropdown-muted: #94a3b8;
+  --dropdown-icon-bg: rgba(30, 41, 59, 0.92);
+  --tooltip-bg: rgba(226, 232, 240, 0.96);
+  --theme-track-bg: linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.98));
+  --theme-track-border: rgba(96, 165, 250, 0.24);
+  --theme-thumb-bg: linear-gradient(135deg, #1d4ed8, #60a5fa);
+  --theme-thumb-ink: #eff6ff;
+  --theme-thumb-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+  --theme-icon-passive: #f8fafc;
+  --ambient-grid: rgba(96, 165, 250, 0.08);
+  --ambient-line: rgba(56, 189, 248, 0.16);
+  --ambient-orb-one: rgba(37, 99, 235, 0.22);
+  --ambient-orb-two: rgba(34, 211, 238, 0.14);
+  --ambient-orb-three: rgba(45, 212, 191, 0.14);
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .loginShell,
+  .accountTypeShell,
+  .settingsMain,
+  .dashboardShell,
+  .profileStudio,
+  .publicPage,
+  .authPage
+) {
+  color: var(--ink-950);
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .loginBrandMark,
+  .oauthButton,
+  .socialSignInButton,
+  .accountTypeCard,
+  .secondaryAction,
+  .field input,
+  .languageField select,
+  .surfaceCard,
+  .panelCard,
+  .summaryCard,
+  .heroCard
+) {
+  background: var(--panel-elevated) !important;
+  border-color: var(--line-strong) !important;
+  color: var(--ink-950) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .field span,
+  .accountTypeCard strong,
+  .formEntryLabel,
+  .socialSignInButton,
+  .oauthButton,
+  .secondaryAction,
+  .languageField select
+) {
+  color: var(--ink-950) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .accountTypeCard small,
+  .accountTypeFootnote,
+  .loginLinks,
+  .separatorRow em,
+  .formEntryLabel
+) {
+  color: var(--ink-500) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(input, textarea, select) {
+  background: var(--field-bg) !important;
+  border-color: var(--field-line) !important;
+  color: var(--ink-950) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(input::placeholder, textarea::placeholder) {
+  color: var(--ink-500) !important;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  overflow-x: clip;
+}
+
+@supports not (overflow-x: clip) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--canvas);
+}
+
+body {
+  position: relative;
+  isolation: isolate;
+  color: var(--ink-950);
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 26%),
+    radial-gradient(circle at right 18%, rgba(15, 139, 141, 0.12), transparent 24%),
+    linear-gradient(180deg, var(--canvas-strong) 0%, var(--canvas) 42%, var(--canvas-end) 100%);
+  font-family: Manrope, "Aptos", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.siteChrome {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  color: var(--text-primary);
+}
+
+.siteChrome :is(input, textarea, select) {
+  background: var(--field-bg);
+  border-color: var(--field-line);
+  color: var(--text-primary);
+}
+
+.siteChrome :is(input::placeholder, textarea::placeholder) {
+  color: var(--text-muted);
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .publicPage,
+  .dashboardShell,
+  .settingsMain,
+  .adminOpsPage,
+  .adminVerificationPage,
+  .profileStudio,
+  .messagesWorkspace,
+  .billingPage,
+  .businessDashboard,
+  .verificationPage
+) {
+  color: var(--text-primary);
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .publicPage,
+  .dashboardShell,
+  .settingsMain,
+  .adminOpsPage,
+  .adminVerificationPage,
+  .profileStudio,
+  .messagesWorkspace,
+  .billingPage,
+  .businessDashboard,
+  .verificationPage
+) :is(h1, h2, h3, h4, h5, h6, strong, label) {
+  color: var(--text-primary);
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .publicPage,
+  .dashboardShell,
+  .settingsMain,
+  .adminOpsPage,
+  .adminVerificationPage,
+  .profileStudio,
+  .messagesWorkspace,
+  .billingPage,
+  .businessDashboard,
+  .verificationPage
+) :is(p, small, li, dd, dt, span) {
+  color: inherit;
+}
+
+html[data-theme='light'] .siteChrome :is(
+  .surfaceCard,
+  .panelCard,
+  .summaryCard,
+  .heroCard,
+  .postCard,
+  .feedSection,
+  .profileHero,
+  .profileDropdown,
+  .mailboxPanel,
+  .conversationPanel,
+  .notificationCard,
+  .threadCard,
+  .modal,
+  .dialog,
+  .authCard,
+  .formSection,
+  .composerModal,
+  .postComposer
+) {
+  color: #0f172a;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .surfaceCard,
+  .panelCard,
+  .summaryCard,
+  .heroCard,
+  .postCard,
+  .feedSection,
+  .profileHero,
+  .profileDropdown,
+  .mailboxPanel,
+  .conversationPanel,
+  .notificationCard,
+  .threadCard,
+  .modal,
+  .dialog,
+  .authCard,
+  .formSection,
+  .composerModal,
+  .postComposer
+) {
+  color: var(--text-primary);
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .profileDropdown,
+  .modal,
+  .dialog,
+  .composerModal,
+  .postComposer
+) {
+  background: var(--surface-3) !important;
+  border-color: var(--line-strong) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .muted,
+  .textMuted,
+  .helperText,
+  .metaText,
+  .caption,
+  .subcopy,
+  .secondaryText
+) {
+  color: var(--text-muted) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .primaryButton,
+  .primaryAction,
+  .sendButton,
+  .submitButton,
+  .publishButton
+) {
+  color: #ffffff !important;
+}
+
+.siteAmbientLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ambientGrid,
+.ambientOrb,
+.ambientLine {
+  position: absolute;
+}
+
+.ambientGrid {
+  inset: -20%;
+  background-image:
+    linear-gradient(var(--ambient-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ambient-grid) 1px, transparent 1px);
+  background-size: 72px 72px;
+  opacity: 0.68;
+  mask-image: radial-gradient(circle at center, black 24%, transparent 82%);
+  transform: perspective(1400px) rotateX(74deg) translateY(-20%);
+  animation: ambientGridDrift 28s linear infinite;
+}
+
+.ambientOrb {
+  border-radius: 999px;
+  filter: blur(42px);
+  opacity: 0.8;
+}
+
+.ambientOrbOne {
+  top: 8%;
+  left: -6%;
+  width: 320px;
+  height: 320px;
+  background: var(--ambient-orb-one);
+  animation: ambientFloat 18s ease-in-out infinite;
+}
+
+.ambientOrbTwo {
+  right: -8%;
+  top: 34%;
+  width: 300px;
+  height: 300px;
+  background: var(--ambient-orb-two);
+  animation: ambientFloat 22s ease-in-out infinite reverse;
+}
+
+.ambientOrbThree {
+  left: 34%;
+  bottom: -10%;
+  width: 260px;
+  height: 260px;
+  background: var(--ambient-orb-three);
+  animation: ambientFloat 20s ease-in-out infinite;
+}
+
+.ambientLine {
+  width: 42vw;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ambient-line), transparent);
+  opacity: 0.6;
+}
+
+.ambientLineOne {
+  top: 18%;
+  left: -8%;
+  transform: rotate(-8deg);
+  animation: ambientSweep 14s ease-in-out infinite;
+}
+
+.ambientLineTwo {
+  right: -6%;
+  bottom: 22%;
+  transform: rotate(8deg);
+  animation: ambientSweep 16s ease-in-out infinite reverse;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+::selection {
+  color: #ffffff;
+  background: rgba(37, 99, 235, 0.86);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.routeLoadingState {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  height: 3px;
+  pointer-events: none;
+  overflow: hidden;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.routeLoadingBar {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brand-700), var(--teal-500));
+  box-shadow: 0 0 18px rgba(37, 99, 235, 0.28);
+  animation: routeLoadingSlide 0.82s ease-in-out infinite;
+}
+
+@keyframes routeLoadingSlide {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+.homePage,
+.dashboardPage,
+.messagesPage,
+.notificationsPage,
+.checkoutPage,
+.publicPage,
+.authPage,
+.profileStudio,
+.profileAccessPage {
+  animation: pageIntro 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.siteHeaderShell,
+.siteFooter,
+.surfaceCard,
+.panelCard,
+.summaryCard,
+.heroCard,
+.profileHero,
+.mailboxPanel,
+.conversationPanel,
+.threadCard,
+.messageBubble,
+.notificationCard,
+.reassuranceCard,
+.planChoice,
+.methodCard,
+.moduleCard,
+.heroBoardCard,
+.authCard,
+.signUpForm,
+.verificationCard,
+.formSection,
+.processTrackerCard,
+.metricCard,
+.processStatCard,
+.studioRail,
+.railCard,
+.workspaceIntro,
+.accessHeroCard,
+.accessMetricCard,
+.accessPanel,
+.accessTimelineCard,
+.accessQuickCard,
+.heroStatCard,
+.summaryButton,
+.primaryButton,
+.ghostButton,
+.primaryAction,
+.ghostAction,
+.memberIconButton,
+.themeToggle {
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease,
+    background 220ms ease,
+    color 220ms ease,
+    filter 220ms ease,
+    opacity 220ms ease;
+  will-change: transform;
+}
+
+.surfaceCard:hover,
+.panelCard:hover,
+.summaryCard:hover,
+.heroCard:hover,
+.threadCard:hover,
+.notificationCard:hover,
+.reassuranceCard:hover,
+.planChoice:hover,
+.methodCard:hover,
+.moduleCard:hover,
+.heroBoardCard:hover,
+.profileHero:hover,
+.processStatCard:hover,
+.metricCard:hover,
+.accessMetricCard:hover,
+.accessTimelineCard:hover,
+.accessQuickCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--lift-shadow);
+}
+
+.primaryButton:hover,
+.ghostButton:hover,
+.primaryAction:hover,
+.ghostAction:hover,
+.memberIconButton:hover,
+.themeToggle:hover {
+  filter: saturate(1.04);
+}
+
+input,
+select,
+textarea {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+html[data-theme='dark'] body {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 28%),
+    radial-gradient(circle at right 18%, rgba(45, 212, 191, 0.1), transparent 24%),
+    linear-gradient(180deg, var(--canvas-strong) 0%, var(--canvas) 44%, var(--canvas-end) 100%);
+}
+
+html[data-theme='dark'] .homePage,
+html[data-theme='dark'] .dashboardPage,
+html[data-theme='dark'] .messagesPage,
+html[data-theme='dark'] .notificationsPage,
+html[data-theme='dark'] .checkoutPage,
+html[data-theme='dark'] .publicPage,
+html[data-theme='dark'] .authPage,
+html[data-theme='dark'] .profileStudio,
+html[data-theme='dark'] .profileAccessPage {
+  color: var(--ink-950) !important;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 30%),
+    radial-gradient(circle at right 18%, rgba(45, 212, 191, 0.1), transparent 24%),
+    linear-gradient(180deg, var(--canvas-strong) 0%, var(--canvas) 46%, var(--canvas-end) 100%) !important;
+}
+
+html[data-theme='dark'] .siteFooter:not(.premium-footer),
+html[data-theme='dark'] .footerColumn,
+html[data-theme='dark'] .footerBadge,
+html[data-theme='dark'] .footerTags span,
+html[data-theme='dark'] .surfaceCard,
+html[data-theme='dark'] .memberIntro,
+html[data-theme='dark'] .guestHero,
+html[data-theme='dark'] .previewCard,
+html[data-theme='dark'] .offerCard,
+html[data-theme='dark'] .browseSection,
+html[data-theme='dark'] .communitySection,
+html[data-theme='dark'] .directoryCard,
+html[data-theme='dark'] .feedEmptyCard,
+html[data-theme='dark'] .checkoutHero,
+html[data-theme='dark'] .panelCard,
+html[data-theme='dark'] .summaryCard,
+html[data-theme='dark'] .planChoice,
+html[data-theme='dark'] .methodCard,
+html[data-theme='dark'] .accountNotice,
+html[data-theme='dark'] .moduleCard,
+html[data-theme='dark'] .heroBoardCard,
+html[data-theme='dark'] .mailboxPanel,
+html[data-theme='dark'] .conversationPanel,
+html[data-theme='dark'] .mailboxHeader,
+html[data-theme='dark'] .conversationHeader,
+html[data-theme='dark'] .threadCard,
+html[data-theme='dark'] .messageBubble,
+html[data-theme='dark'] .heroCard,
+html[data-theme='dark'] .feedSection,
+html[data-theme='dark'] .notificationCard,
+html[data-theme='dark'] .reassuranceCard,
+html[data-theme='dark'] .profileHero,
+html[data-theme='dark'] .heroMetaCard,
+html[data-theme='dark'] .experienceCard,
+html[data-theme='dark'] .authCard,
+html[data-theme='dark'] .signUpForm,
+html[data-theme='dark'] .verificationCard,
+html[data-theme='dark'] .formSection,
+html[data-theme='dark'] .processTrackerCard,
+html[data-theme='dark'] .metricCard,
+html[data-theme='dark'] .processStatCard,
+html[data-theme='dark'] .studioRail,
+html[data-theme='dark'] .railCard,
+html[data-theme='dark'] .workspaceIntro,
+html[data-theme='dark'] .statusStrip,
+html[data-theme='dark'] .accessCommandBar,
+html[data-theme='dark'] .accessHeroCard,
+html[data-theme='dark'] .accessMetricCard,
+html[data-theme='dark'] .accessPanel,
+html[data-theme='dark'] .accessTimelineCard,
+html[data-theme='dark'] .accessQuickCard,
+html[data-theme='dark'] .guestStatCard,
+html[data-theme='dark'] .profileMetricGrid article,
+html[data-theme='dark'] .postSpotlight,
+html[data-theme='dark'] .suggestionRow,
+html[data-theme='dark'] .statusRow,
+html[data-theme='dark'] .heroStatCard,
+html[data-theme='dark'] .summaryCard.alt,
+html[data-theme='dark'] .accessInfoItem,
+html[data-theme='dark'] .accessSideMetric,
+html[data-theme='dark'] .processStatCard,
+html[data-theme='dark'] .summaryButton,
+html[data-theme='dark'] .summaryButton.ghost,
+html[data-theme='dark'] .filterButton,
+html[data-theme='dark'] .heroMetaCard {
+  background: var(--panel-strong) !important;
+  border-color: var(--line-soft) !important;
+  box-shadow: var(--shadow-soft) !important;
+  color: var(--ink-950) !important;
+}
+
+html[data-theme='dark'] .homePage p,
+html[data-theme='dark'] .dashboardPage p,
+html[data-theme='dark'] .messagesPage p,
+html[data-theme='dark'] .notificationsPage p,
+html[data-theme='dark'] .checkoutPage p,
+html[data-theme='dark'] .publicPage p,
+html[data-theme='dark'] .authPage p,
+html[data-theme='dark'] .profileStudio p,
+html[data-theme='dark'] .profileAccessPage p,
+html[data-theme='dark'] .siteFooter:not(.premium-footer) p,
+html[data-theme='dark'] .homePage small,
+html[data-theme='dark'] .dashboardPage small,
+html[data-theme='dark'] .messagesPage small,
+html[data-theme='dark'] .notificationsPage small,
+html[data-theme='dark'] .checkoutPage small,
+html[data-theme='dark'] .publicPage small,
+html[data-theme='dark'] .authPage small,
+html[data-theme='dark'] .profileStudio small,
+html[data-theme='dark'] .profileAccessPage small,
+html[data-theme='dark'] .siteFooter:not(.premium-footer) small {
+  color: var(--ink-600) !important;
+}
+
+html[data-theme='dark'] .homePage h1,
+html[data-theme='dark'] .homePage h2,
+html[data-theme='dark'] .homePage h3,
+html[data-theme='dark'] .dashboardPage h1,
+html[data-theme='dark'] .dashboardPage h2,
+html[data-theme='dark'] .dashboardPage h3,
+html[data-theme='dark'] .messagesPage h1,
+html[data-theme='dark'] .messagesPage h2,
+html[data-theme='dark'] .notificationsPage h1,
+html[data-theme='dark'] .notificationsPage h2,
+html[data-theme='dark'] .checkoutPage h1,
+html[data-theme='dark'] .checkoutPage h2,
+html[data-theme='dark'] .publicPage h1,
+html[data-theme='dark'] .publicPage h2,
+html[data-theme='dark'] .authPage h1,
+html[data-theme='dark'] .authPage h2,
+html[data-theme='dark'] .profileStudio h1,
+html[data-theme='dark'] .profileStudio h2,
+html[data-theme='dark'] .profileStudio h3,
+html[data-theme='dark'] .profileAccessPage h1,
+html[data-theme='dark'] .profileAccessPage h2,
+html[data-theme='dark'] .profileAccessPage h3,
+html[data-theme='dark'] strong,
+html[data-theme='dark'] label,
+html[data-theme='dark'] dt,
+html[data-theme='dark'] dd {
+  color: var(--ink-950) !important;
+}
+
+html[data-theme='dark'] input,
+html[data-theme='dark'] select,
+html[data-theme='dark'] textarea,
+html[data-theme='dark'] .languageField select {
+  background: var(--field-bg) !important;
+  border-color: var(--field-line) !important;
+  color: var(--ink-950) !important;
+}
+
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder {
+  color: var(--ink-500) !important;
+}
+
+html[data-theme='dark'] .ghostButton,
+html[data-theme='dark'] .ghostAction,
+html[data-theme='dark'] .chipButton,
+html[data-theme='dark'] .followButton,
+html[data-theme='dark'] .summaryButton.ghost,
+html[data-theme='dark'] .filterButton,
+html[data-theme='dark'] .languageField select {
+  background: var(--panel-inset) !important;
+  border-color: var(--line-soft) !important;
+  color: var(--ink-950) !important;
+}
+
+html[data-theme='dark'] .primaryButton,
+html[data-theme='dark'] .primaryAction {
+  box-shadow: 0 20px 40px rgba(37, 99, 235, 0.28) !important;
+}
+
+html[data-theme='dark'] .footerTags span,
+html[data-theme='dark'] .postChipRow span,
+html[data-theme='dark'] .topicRow span,
+html[data-theme='dark'] .chipRow span,
+html[data-theme='dark'] .directoryStatus,
+html[data-theme='dark'] .publicVisibilityPill,
+html[data-theme='dark'] .privateVisibilityPill,
+html[data-theme='dark'] .planBadge.silver {
+  background: rgba(30, 41, 59, 0.92) !important;
+  color: var(--brand-500) !important;
+  border-color: rgba(96, 165, 250, 0.16) !important;
+}
+
+html[data-theme='dark'] .postCard,
+html[data-theme='dark'] .postCard.member,
+html[data-theme='dark'] .guestLeadCard,
+html[data-theme='dark'] .guestPremiumCard.gold,
+html[data-theme='dark'] .guestPremiumCard.silver,
+html[data-theme='dark'] .guestPremiumCard.platinum {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(12, 21, 39, 0.98)) !important;
+  border-color: var(--line-soft) !important;
+}
+
+html[data-theme='dark'] .siteHeaderShell {
+  background: var(--header-shell-bg) !important;
+  border-color: var(--header-shell-border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+html[data-theme='dark'] .profileDropdown {
+  background: var(--dropdown-bg) !important;
+  border-color: var(--line-soft) !important;
+}
+
+html[data-theme='dark'] .profileMenuLink,
+html[data-theme='dark'] .profileMenuLogout,
+html[data-theme='dark'] .profileDropdownHeader strong,
+html[data-theme='dark'] .profileDropdownHeader small {
+  color: var(--dropdown-ink) !important;
+}
+
+html[data-theme='dark'] .profileMenuLink:hover,
+html[data-theme='dark'] .profileMenuLink:focus-visible,
+html[data-theme='dark'] .profileMenuLogout:hover,
+html[data-theme='dark'] .profileMenuLogout:focus-visible {
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
+html[data-theme='dark'] .profileMenuIcon {
+  background: var(--dropdown-icon-bg) !important;
+  color: var(--dropdown-ink) !important;
+}
+
+html[data-theme='light'] .siteChrome :is(
+  .surfaceCard,
+  .panelCard,
+  .summaryCard,
+  .heroCard,
+  .authCard,
+  .formSection,
+  .mailboxPanel,
+  .conversationPanel,
+  .profileDropdown,
+  .modal,
+  .dialog,
+  .postComposer
+) :is(h1, h2, h3, h4, h5, h6, strong, label, dt, dd, li) {
+  color: var(--text-primary);
+}
+
+html[data-theme='light'] .siteChrome :is(
+  .surfaceCard,
+  .panelCard,
+  .summaryCard,
+  .heroCard,
+  .authCard,
+  .formSection,
+  .mailboxPanel,
+  .conversationPanel,
+  .profileDropdown,
+  .modal,
+  .dialog,
+  .postComposer
+) :is(p, small, em, span) {
+  color: inherit;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .surfaceCard,
+  .panelCard,
+  .summaryCard,
+  .heroCard,
+  .authCard,
+  .formSection,
+  .mailboxPanel,
+  .conversationPanel,
+  .profileDropdown,
+  .modal,
+  .dialog,
+  .postComposer
+) :is(h1, h2, h3, h4, h5, h6, strong, label, dt, dd, li) {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .surfaceCard,
+  .panelCard,
+  .summaryCard,
+  .heroCard,
+  .authCard,
+  .formSection,
+  .mailboxPanel,
+  .conversationPanel,
+  .profileDropdown,
+  .modal,
+  .dialog,
+  .postComposer
+) :is(p, small, em, span):not(
+  .primaryButton,
+  .primaryButton *,
+  .primaryAction,
+  .primaryAction *,
+  .headerActionPrimary,
+  .headerActionPrimary *,
+  .themeToggle,
+  .themeToggle *
+) {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(select option, datalist option) {
+  background: var(--panel-elevated);
+  color: var(--text-primary);
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .premiumSaas,
+  .settingsCenterPage,
+  .notificationsCenter,
+  .messagesApp,
+  .dashboardPage,
+  .checkoutPage
+) {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .premiumSaas,
+  .settingsCenterPage,
+  .notificationsCenter,
+  .messagesApp,
+  .dashboardPage,
+  .checkoutPage
+) :is(
+  [class*='Panel'],
+  [class*='Card'],
+  [class*='Box'],
+  [class*='Field'],
+  [class*='Row'],
+  [class*='Sidebar'],
+  [class*='Topbar'],
+  [class*='Header'],
+  [class*='List'],
+  [class*='Table'],
+  .saasPanel,
+  .sideNav,
+  .savedInfoBox,
+  .checkoutPackageCard,
+  .paymentGroup,
+  .paymentField,
+  .billingToggle button,
+  .seatStepper
+):not(.primaryAction):not(.primaryButton):not(.subscribeButton):not(.sendButton) {
+  background: var(--panel-strong) !important;
+  border-color: var(--line-soft) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .premiumSaas,
+  .settingsCenterPage,
+  .notificationsCenter,
+  .messagesApp,
+  .dashboardPage,
+  .checkoutPage
+) :is(h1, h2, h3, h4, h5, h6, strong, label, dt, dd, li, th) {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .premiumSaas,
+  .settingsCenterPage,
+  .notificationsCenter,
+  .messagesApp,
+  .dashboardPage,
+  .checkoutPage
+) :is(p, small, em, td, .mutedText, .formHint, .verificationHint, .settingsHint, .notificationMetaRow) {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .premiumSaas,
+  .settingsCenterPage,
+  .notificationsCenter,
+  .messagesApp,
+  .dashboardPage,
+  .checkoutPage
+) :is(input, textarea, select) {
+  background: var(--field-bg) !important;
+  border-color: var(--field-line) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .premiumSaas,
+  .settingsCenterPage,
+  .notificationsCenter,
+  .messagesApp,
+  .dashboardPage,
+  .checkoutPage
+) :is(button:not(.primaryAction):not(.primaryButton):not(.subscribeButton):not(.sendButton), a:not(.primaryAction):not(.primaryButton)) {
+  color: var(--text-primary);
+}
+
+html[data-theme='dark'] .siteChrome :is(.primaryAction, .primaryButton, .subscribeButton, .sendButton) {
+  color: #ffffff !important;
+}
+
+html[data-theme='light'] .siteChrome :is(
+  .premiumSaas,
+  .settingsCenterPage,
+  .notificationsCenter,
+  .messagesApp,
+  .dashboardPage,
+  .checkoutPage
+) {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .siteChrome :is(
+  .premiumSaas,
+  .settingsCenterPage,
+  .notificationsCenter,
+  .messagesApp,
+  .dashboardPage,
+  .checkoutPage
+) :is(h1, h2, h3, h4, h5, h6, strong, label, dt, dd, li, th) {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .siteChrome :is(
+  .premiumSaas,
+  .settingsCenterPage,
+  .notificationsCenter,
+  .messagesApp,
+  .dashboardPage,
+  .checkoutPage
+) :is(p, small, em, td, .mutedText, .formHint, .verificationHint, .settingsHint, .notificationMetaRow) {
+  color: #475569 !important;
+}
+
+html[data-theme='dark'] .publicSaasLanding :is(
+  .heroMetricCard,
+  .heroAttachmentCard,
+  .feedAttachmentRow,
+  .feedMockupSignals span,
+  .heroFeedChips span,
+  .feedMockupChips span,
+  .landingProfileTags span,
+  .heroPremiumTag,
+  .miniPremiumPill,
+  .landingPlanBadge,
+  .landingHowStepBadge,
+  .avatarFallbackBadge,
+  .landingProfileVisibility
+) {
+  background: rgba(30, 41, 59, 0.94) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .publicSaasLanding :is(
+  .heroStagePrimaryCard,
+  .heroStageFeedCard,
+  .heroStageFloatingCard,
+  .feedMockupCard,
+  .storyBoard,
+  .landingProfileCard,
+  .landingPlanCard,
+  .landingSecurityConsole,
+  .landingTrustCard,
+  .landingHowStep
+) {
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 30%),
+    rgba(15, 23, 42, 0.94) !important;
+  border-color: rgba(148, 163, 184, 0.24) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .analyticsPage,
+  .networkPage,
+  .onboardingPage,
+  .memberRoutePage,
+  .publicProfilePage,
+  .publicInfoPage,
+  .verificationPage,
+  .adminVerificationPage,
+  .privacySettingsPage,
+  .completionPage,
+  .profilePage,
+  .searchPage,
+  .savedPage,
+  .opsPage,
+  .adminOpsPage,
+  .legalPage,
+  .partnersPage
+) {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .analyticsHero,
+  .analyticsFooter,
+  .analyticsNotice,
+  .heroProfile,
+  .heroScore div,
+  .kpiCard,
+  .chartPanel,
+  .insightPanel,
+  .recommendationItem,
+  .activityList span,
+  .sideNav,
+  .timelinePanel,
+  .searchBox,
+  .toolButton,
+  .loadMore,
+  .settingsPanel,
+  .toggle,
+  .notificationRow,
+  .inlineAction,
+  .iconAction,
+  .moreButton,
+  .loadingPanel,
+  .completionHeader,
+  .progressPanel,
+  .recommendPanel,
+  .checklistPanel,
+  .checkItem,
+  .privacyHeroCard,
+  .privacySummaryCard,
+  .privacyRulesCard,
+  .privacyProfileSelectCard,
+  .privacyQuickCard,
+  .privacyCard,
+  .privacyVisibilityRow,
+  .privacyToggleRow,
+  .profileSection,
+  .profileCard,
+  .publicPost,
+  .documentLink,
+  .emptySurface,
+  .mediaEmpty,
+  .authPanel,
+  .profileHero,
+  .avatarEdit,
+  .avatarMenu,
+  .editPanel,
+  .aboutMenu,
+  .aboutSection,
+  .composerPrompt,
+  .selectedPostAttachment,
+  .postCard,
+  .profileCommentPanel,
+  .profileCommentItem,
+  .profileCommentComposer,
+  .metricCard,
+  .eventItem,
+  .suggestionItem,
+  .cropModal,
+  .coverModal,
+  .mediaCropModal,
+  .forgotCard,
+  .resetCard,
+  .verificationCard,
+  .signUpTopbar,
+  .formSection,
+  .captchaSlot,
+  .consentRow,
+  .stepPill,
+  .messageComposerDock,
+  .messageComposerBar,
+  .voiceRecordingBar,
+  .voiceStopButton,
+  .settingsSidebar,
+  .settingsProfileMini,
+  .settingsTopBar,
+  .settingsRow,
+  .settingsUploadRow,
+  .settingsLinkRow,
+  .settingsField,
+  .settingsTextarea,
+  .mediaPreview,
+  .sessionCard,
+  .subscriptionStrip > div,
+  .paymentRow,
+  .emptyStateCompact
+) {
+  background: var(--panel-strong) !important;
+  border-color: var(--line-soft) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .field input,
+  .settingsField input,
+  .settingsField select,
+  .settingsTextarea textarea,
+  .settingsRow select,
+  .searchBox input,
+  .profileCommentComposer input,
+  .messageComposerBar textarea
+) {
+  background: var(--field-bg) !important;
+  border-color: var(--field-line) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .smartHeader p,
+  .rowTop p,
+  .rowMeta,
+  .emptyState p,
+  .compactFooter,
+  .heroCopy p,
+  .profileMeta span,
+  .profileMeta small,
+  .kpiCard small,
+  .kpiCard em,
+  .chartLegend span,
+  .activityList span,
+  .recommendationItem p,
+  .settingsRow small,
+  .settingsUploadRow small,
+  .settingsLinkRow small,
+  .sessionCard span,
+  .sessionCard small,
+  .subscriptionStrip span,
+  .paymentRow span,
+  .paymentRow a,
+  .username,
+  .headline,
+  .identityLine,
+  .profileEssentials,
+  .metaLine,
+  .muted,
+  .postCard small,
+  .infoRow span,
+  .miniEntry span
+) {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .ghostAction,
+  .secondaryAction,
+  .softButton,
+  .ghostButton,
+  .ghostCompactButton,
+  .privacyGhostButton,
+  .softAction,
+  .textAction,
+  .inlineAction,
+  .iconAction,
+  .toolButton,
+  .loadMore
+) {
+  background: var(--panel-inset) !important;
+  border-color: var(--line-soft) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .priority,
+  .stepPill,
+  .statusBadge,
+  .planBadge,
+  .trendPill,
+  .unreadBadge,
+  .settingsRow em,
+  .tagCloud span
+) {
+  background: rgba(30, 41, 59, 0.94) !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+  color: #bfdbfe !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .primaryAction,
+  .primaryButton,
+  .primaryCompactButton,
+  .privacyPrimaryButton,
+  .submitButton,
+  .sendButton,
+  .voiceSendNowButton
+),
+html[data-theme='dark'] .siteChrome :is(
+  .primaryAction,
+  .primaryButton,
+  .primaryCompactButton,
+  .privacyPrimaryButton,
+  .submitButton,
+  .sendButton,
+  .voiceSendNowButton
+) * {
+  color: #ffffff !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .networkPage,
+  .searchPage,
+  .savedPage,
+  .privacyPage,
+  .privacyShell,
+  .profileCompletionPage,
+  .analyticsPage,
+  .partnersPage,
+  .adminPage,
+  .adminOpsPage,
+  .legalPage,
+  .billingPage,
+  .settingsPage,
+  .verificationPage,
+  .premiumPage,
+  .profileAccessPage,
+  .publicProfilePage,
+  .profileStudio
+) {
+  color: var(--text-primary) !important;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 30%),
+    radial-gradient(circle at right 18%, rgba(45, 212, 191, 0.1), transparent 24%),
+    linear-gradient(180deg, var(--canvas-strong) 0%, var(--canvas) 46%, var(--canvas-end) 100%) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .networkPage,
+  .searchPage,
+  .savedPage,
+  .privacyPage,
+  .privacyShell,
+  .profileCompletionPage,
+  .analyticsPage,
+  .partnersPage,
+  .adminPage,
+  .adminOpsPage,
+  .legalPage,
+  .billingPage,
+  .settingsPage,
+  .verificationPage,
+  .premiumPage,
+  .profileAccessPage,
+  .publicProfilePage,
+  .profileStudio
+) :is(h1, h2, h3, h4, h5, h6, strong, label, th) {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .networkPage,
+  .searchPage,
+  .savedPage,
+  .privacyPage,
+  .privacyShell,
+  .profileCompletionPage,
+  .analyticsPage,
+  .partnersPage,
+  .adminPage,
+  .adminOpsPage,
+  .legalPage,
+  .billingPage,
+  .settingsPage,
+  .verificationPage,
+  .premiumPage,
+  .profileAccessPage,
+  .publicProfilePage,
+  .profileStudio
+) :is(p, small, span, li, td, dd, dt, em) {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .networkPage,
+  .searchPage,
+  .savedPage,
+  .privacyPage,
+  .privacyShell,
+  .profileCompletionPage,
+  .analyticsPage,
+  .partnersPage,
+  .adminPage,
+  .adminOpsPage,
+  .legalPage,
+  .billingPage,
+  .settingsPage,
+  .verificationPage,
+  .premiumPage,
+  .profileAccessPage,
+  .publicProfilePage,
+  .profileStudio
+) :is(
+  article,
+  aside,
+  section,
+  form,
+  table,
+  .networkSidebar,
+  .networkSection,
+  .networkSignedOut,
+  .networkProfileCard,
+  .networkListRow,
+  .networkInfoGrid article,
+  .networkEmpty,
+  .searchHero,
+  .searchCard,
+  .savedHero,
+  .savedCard,
+  .privacyCard,
+  .privacyPanel,
+  .completionHero,
+  .completionCard,
+  .analyticsCard,
+  .partnersHero,
+  .partnerCard,
+  .adminHero,
+  .adminCard,
+  .legalCard,
+  .billingCard,
+  .settingsCard,
+  .verificationCard,
+  .premiumCard,
+  .publicProfileCard
+) {
+  background: var(--surface-2) !important;
+  border-color: var(--line-soft) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .networkPage,
+  .searchPage,
+  .savedPage,
+  .privacyPage,
+  .privacyShell,
+  .profileCompletionPage,
+  .analyticsPage,
+  .partnersPage,
+  .adminPage,
+  .adminOpsPage,
+  .legalPage,
+  .billingPage,
+  .settingsPage,
+  .verificationPage,
+  .premiumPage,
+  .profileAccessPage,
+  .publicProfilePage,
+  .profileStudio
+) :is(input, textarea, select) {
+  background: var(--field-bg) !important;
+  border-color: var(--field-line) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .networkPage,
+  .searchPage,
+  .savedPage,
+  .privacyPage,
+  .privacyShell,
+  .profileCompletionPage,
+  .analyticsPage,
+  .partnersPage,
+  .adminPage,
+  .adminOpsPage,
+  .legalPage,
+  .billingPage,
+  .settingsPage,
+  .verificationPage,
+  .premiumPage,
+  .profileAccessPage,
+  .publicProfilePage,
+  .profileStudio
+) :is(
+  button:not(.primaryButton):not(.primaryAction):not(.primaryNetworkButton):not(.submitButton):not(.sendButton),
+  .ghostButton,
+  .softButton,
+  .secondaryAction,
+  .softNetworkButton,
+  .filterChip,
+  .statusBadge,
+  .tag,
+  .badge
+) {
+  background: var(--panel-inset) !important;
+  border-color: var(--line-soft) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme='dark'] .siteChrome :is(
+  .primaryButton,
+  .primaryAction,
+  .primaryNetworkButton,
+  .submitButton,
+  .sendButton
+),
+html[data-theme='dark'] .siteChrome :is(
+  .primaryButton,
+  .primaryAction,
+  .primaryNetworkButton,
+  .submitButton,
+  .sendButton
+) * {
+  color: #ffffff !important;
+}
+
+html[data-theme='light'] .siteChrome .premiumSaas .heroPanel,
+html[data-theme='dark'] .siteChrome .premiumSaas .heroPanel {
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.16), transparent 34%),
+    linear-gradient(180deg, #0f172a, #111827) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  color: #f8fafc !important;
+}
+
+html[data-theme='light'] .siteChrome .premiumSaas .heroPanel :is(h1, h2, h3, h4, strong, label, span, li),
+html[data-theme='dark'] .siteChrome .premiumSaas .heroPanel :is(h1, h2, h3, h4, strong, label, span, li) {
+  color: #f8fafc !important;
+}
+
+html[data-theme='light'] .siteChrome .premiumSaas .heroPanel :is(p, small, em),
+html[data-theme='dark'] .siteChrome .premiumSaas .heroPanel :is(p, small, em) {
+  color: #cbd5e1 !important;
+}
+
+html[data-theme='light'] .siteChrome .premiumSaas .heroMetric,
+html[data-theme='dark'] .siteChrome .premiumSaas .heroMetric {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme='light'] .siteChrome .professionalMessagesPage.bg-dark .messageStream {
+  background: #111827 !important;
+  color: #f8fafc !important;
+}
+
+html[data-theme='light'] .siteChrome .professionalMessagesPage.bg-dark .messageStream :is(strong, h1, h2, h3, label) {
+  color: #f8fafc !important;
+}
+
+html[data-theme='light'] .siteChrome .professionalMessagesPage.bg-dark .messageStream :is(p, small, span, em) {
+  color: #cbd5e1 !important;
+}
+
+@keyframes ambientGridDrift {
+  0% {
+    transform: perspective(1400px) rotateX(74deg) translateY(-20%) translateX(0);
+  }
+
+  50% {
+    transform: perspective(1400px) rotateX(74deg) translateY(-17%) translateX(-1.5%);
+  }
+
+  100% {
+    transform: perspective(1400px) rotateX(74deg) translateY(-20%) translateX(0);
+  }
+}
+
+@keyframes ambientFloat {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(16px, -12px, 0) scale(1.06);
+  }
+
+  100% {
+    transform: translate3d(-10px, 10px, 0) scale(0.98);
+  }
+}
+
+@keyframes ambientSweep {
+  0% {
+    transform: translateX(0) rotate(-8deg);
+    opacity: 0.4;
+  }
+
+  50% {
+    transform: translateX(6%) rotate(-5deg);
+    opacity: 0.82;
+  }
+
+  100% {
+    transform: translateX(0) rotate(-8deg);
+    opacity: 0.4;
+  }
+}
+
+@keyframes pageIntro {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

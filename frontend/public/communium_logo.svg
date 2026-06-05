@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title>Communium</title>
+  <defs>
+    <linearGradient id="bg" x1="16" y1="16" x2="112" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563eb"/>
+      <stop offset="0.52" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#bg)"/>
+  <path d="M75.2 38.4a31.6 31.6 0 1 0 0 51.2" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round"/>
+  <path d="M62 64h39" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round"/>
+  <circle cx="99" cy="64" r="8" fill="#ffffff"/>
+</svg>

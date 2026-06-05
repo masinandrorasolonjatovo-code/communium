@@ -1,0 +1,36 @@
+{
+  "navigation": {
+    "home": "الرئيسية",
+    "about": "حول",
+    "services": "الخدمات",
+    "contact": "اتصل بنا",
+    "profile": "الملف الشخصي",
+    "logout": "تسجيل الخروج",
+    "dashboard": "لوحة التحكم",
+    "auth": "المصادقة",
+    "signIn": "تسجيل الدخول"
+  },
+  "common": {
+    "welcome": "مرحباً بك في Communium",
+    "loading": "جارٍ التحميل...",
+    "error": "حدث خطأ",
+    "success": "نجاح",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "delete": "حذف",
+    "edit": "تعديل"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "rememberMe": "تذكرني"
+  },
+  "membership": {
+    "free": "مجاني",
+    "silver": "فضي",
+    "gold": "ذهبي",
+    "platinum": "بلاتيني"
+  }
+}

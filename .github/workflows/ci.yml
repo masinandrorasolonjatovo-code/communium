@@ -1,0 +1,175 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # TypeScript Compilation Check
+  typescript-check:
+    runs-on: ubuntu-latest
+    name: TypeScript Compilation Check
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies (Frontend)
+        run: cd frontend && npm ci
+
+      - name: Check TypeScript compilation (Frontend)
+        run: cd frontend && npx tsc --noEmit
+
+      - name: Install dependencies (Backend)
+        run: cd backend && npm ci
+
+      - name: Lint Check (Backend)
+        run: cd backend && npm run lint
+
+  # Unit Tests
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: Unit Tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies (Backend)
+        run: cd backend && npm ci
+
+      - name: Run Unit Tests
+        run: cd backend && npm run test:unit
+
+      - name: Upload Test Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./backend/coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  # Load Testing
+  load-tests:
+    runs-on: ubuntu-latest
+    name: Load Testing & Performance
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: communium_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test123
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies (Backend)
+        run: cd backend && npm ci
+
+      - name: Setup environment variables
+        run: |
+          cd backend
+          echo "DATABASE_URL=postgres://test:test123@localhost:5432/communium_test" > .env.test
+          echo "REDIS_URL=redis://localhost:6379" >> .env.test
+
+      - name: Run Load Tests
+        run: cd backend && npm run test:load
+        timeout-minutes: 10
+
+      - name: Run Performance Benchmark
+        run: cd backend && npm run test:perf
+        timeout-minutes: 10
+
+  # Code Quality & Formatting
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality & Formatting
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies (Frontend)
+        run: cd frontend && npm ci
+
+      - name: Check Prettier formatting (Frontend)
+        run: cd frontend && npx prettier --check .
+
+      - name: Install dependencies (Backend)
+        run: cd backend && npm ci
+
+      - name: Check Prettier formatting (Backend)
+        run: cd backend && npx prettier --check .
+
+  # Build Docker Images
+  build-docker:
+    runs-on: ubuntu-latest
+    name: Build Docker Images
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          tags: communium-frontend:latest
+
+      - name: Build Backend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          tags: communium-backend:latest
+
+      - name: Build AI Service Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ai-service
+          push: false
+          tags: communium-ai-service:latest

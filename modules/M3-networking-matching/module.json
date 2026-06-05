@@ -1,0 +1,25 @@
+{
+  "id": "M3",
+  "name": "Networking, connexions et matching",
+  "pushPaths": [
+    "modules/M3-networking-matching/backend/homeModule.js",
+    "modules/M3-networking-matching/backend/matching.ts",
+    "modules/M3-networking-matching/frontend/NetworkCenter.tsx",
+    "modules/M3-networking-matching/frontend/SearchPage.tsx",
+    "modules/M3-networking-matching/frontend/DiscoverPage.tsx",
+    "frontend/modules/M3-networking-matching/NetworkCenter.tsx",
+    "frontend/modules/M3-networking-matching/SearchPage.tsx",
+    "frontend/modules/M3-networking-matching/DiscoverPage.tsx",
+    "frontend/components/network/NetworkCenter.tsx",
+    "frontend/app/[locale]/discover/page.tsx",
+    "frontend/app/[locale]/search/page.tsx",
+    "backend/src/homeModule.js",
+    "backend/src/routes/matching.ts",
+    "ai-service/matching_service.py",
+    "frontend/tsconfig.json",
+    "frontend/next.config.mjs",
+    "backend/prisma/schema.prisma",
+    "database/init.sql",
+    "modules/M3-networking-matching"
+  ]
+}

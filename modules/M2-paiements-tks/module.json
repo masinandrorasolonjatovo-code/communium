@@ -1,0 +1,15 @@
+{
+  "id": "M2",
+  "name": "Paiements et economie Tks",
+  "pushPaths": [
+    "backend/src/routes/payment.ts",
+    "backend/src/governanceModule.js",
+    "frontend/app/[locale]/checkout",
+    "frontend/app/[locale]/billing",
+    "frontend/app/[locale]/premium",
+    "frontend/components/premium",
+    "backend/prisma/schema.prisma",
+    "database/init.sql",
+    "modules/M2-paiements-tks"
+  ]
+}

@@ -28,4 +28,25 @@ venv/
 *.egg-info/
 .env.*.local
 .env.local
+<<<<<<< HEAD
 .env
+=======
+.env
+node_modules/
+.next/
+dist/
+build/
+.env
+
+.codex-logs/
+.tools/
+backend/uploads/
+
+*.log
+*.zip
+*.rar
+*.7z
+*.mp4
+*.mov
+*.avi
+>>>>>>> 12f16f5bfd58ead24e306b997f29204f1a9543d8

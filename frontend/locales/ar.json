@@ -1,0 +1,15 @@
+{
+  "app": {
+    "name": "Communium",
+    "defaultLocale": "fr"
+  },
+  "governance": {
+    "privacy": "الخصوصية",
+    "security": "الأمان",
+    "dataRights": "حقوق البيانات",
+    "business": "الملف التجاري",
+    "billing": "الفوترة",
+    "partners": "الشركاء",
+    "reports": "البلاغات"
+  }
+}

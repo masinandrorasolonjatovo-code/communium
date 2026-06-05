@@ -1,0 +1,18 @@
+{
+  "id": "M1",
+  "name": "Authentification et profils utilisateurs",
+  "pushPaths": [
+    "backend/src/profileModule.js",
+    "backend/src/onboardingModule.js",
+    "backend/src/settingsModule.js",
+    "backend/src/governanceModule.js",
+    "frontend/app/[locale]/auth",
+    "frontend/app/[locale]/profile",
+    "frontend/components/profile",
+    "frontend/components/verification",
+    "frontend/components/settings",
+    "backend/prisma/schema.prisma",
+    "database/init.sql",
+    "modules/M1-auth-profils"
+  ]
+}
